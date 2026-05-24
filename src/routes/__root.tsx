@@ -76,8 +76,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ" },
       { name: "description", content: "ระบบลงทะเบียนสมาชิกสมาคมศิษย์เก่า" },
       { property: "og:title", content: "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ" },
-      { property: "og:description", content: "ระบบลงทะเบียนสมาชิกออนไลน์" },
+      { property: "og:description", content: "ระบบลงทะเบียนสมาชิกสมาคมศิษย์เก่า" },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ" },
+      { name: "twitter:description", content: "ระบบลงทะเบียนสมาชิกสมาคมศิษย์เก่า" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a0690ae9-119e-44fe-b17e-d7da22a2314a/id-preview-5ac29f95--c9c06a8b-5f64-42d6-823d-b82525499c5f.lovable.app-1779635021692.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a0690ae9-119e-44fe-b17e-d7da22a2314a/id-preview-5ac29f95--c9c06a8b-5f64-42d6-823d-b82525499c5f.lovable.app-1779635021692.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {
