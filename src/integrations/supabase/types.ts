@@ -14,16 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          admin_note: string | null
+          approved_at: string | null
+          approved_by: string | null
+          birth_date: string | null
+          created_at: string
+          current_district: string | null
+          current_house_no: string | null
+          current_moo: string | null
+          current_postal_code: string | null
+          current_province: string | null
+          current_road: string | null
+          current_soi: string | null
+          current_subdistrict: string | null
+          education_level: string | null
+          enrollment_year: string | null
+          friend_1: string | null
+          friend_2: string | null
+          full_name: string
+          id: string
+          major: string | null
+          member_no: string | null
+          note: string | null
+          payment_amount: number
+          payment_date: string | null
+          payment_slip_url: string | null
+          phone: string
+          prefix: string
+          status: string
+          student_id: string | null
+          study_period: string | null
+          updated_at: string
+          work_district: string | null
+          work_house_no: string | null
+          work_moo: string | null
+          work_phone: string | null
+          work_postal_code: string | null
+          work_province: string | null
+          work_road: string | null
+          work_soi: string | null
+          work_subdistrict: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          birth_date?: string | null
+          created_at?: string
+          current_district?: string | null
+          current_house_no?: string | null
+          current_moo?: string | null
+          current_postal_code?: string | null
+          current_province?: string | null
+          current_road?: string | null
+          current_soi?: string | null
+          current_subdistrict?: string | null
+          education_level?: string | null
+          enrollment_year?: string | null
+          friend_1?: string | null
+          friend_2?: string | null
+          full_name: string
+          id?: string
+          major?: string | null
+          member_no?: string | null
+          note?: string | null
+          payment_amount?: number
+          payment_date?: string | null
+          payment_slip_url?: string | null
+          phone: string
+          prefix: string
+          status?: string
+          student_id?: string | null
+          study_period?: string | null
+          updated_at?: string
+          work_district?: string | null
+          work_house_no?: string | null
+          work_moo?: string | null
+          work_phone?: string | null
+          work_postal_code?: string | null
+          work_province?: string | null
+          work_road?: string | null
+          work_soi?: string | null
+          work_subdistrict?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          birth_date?: string | null
+          created_at?: string
+          current_district?: string | null
+          current_house_no?: string | null
+          current_moo?: string | null
+          current_postal_code?: string | null
+          current_province?: string | null
+          current_road?: string | null
+          current_soi?: string | null
+          current_subdistrict?: string | null
+          education_level?: string | null
+          enrollment_year?: string | null
+          friend_1?: string | null
+          friend_2?: string | null
+          full_name?: string
+          id?: string
+          major?: string | null
+          member_no?: string | null
+          note?: string | null
+          payment_amount?: number
+          payment_date?: string | null
+          payment_slip_url?: string | null
+          phone?: string
+          prefix?: string
+          status?: string
+          student_id?: string | null
+          study_period?: string | null
+          updated_at?: string
+          work_district?: string | null
+          work_house_no?: string | null
+          work_moo?: string | null
+          work_phone?: string | null
+          work_postal_code?: string | null
+          work_province?: string | null
+          work_road?: string | null
+          work_soi?: string | null
+          work_subdistrict?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +305,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
