@@ -1,26 +1,100 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { SiteHeader } from "@/components/site-header";
+import { GraduationCap, Users, ShieldCheck, ArrowRight, Search } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ — ลงทะเบียนสมาชิก" },
+      { name: "description", content: "ระบบลงทะเบียนสมาชิกสมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ สมัครออนไลน์ ตรวจสอบสถานะได้ตลอดเวลา" },
+    ],
+  }),
+  component: Home,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Home() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen">
+      <SiteHeader />
+      <main>
+        <section className="relative overflow-hidden border-b bg-gradient-to-br from-primary/5 via-background to-accent/30">
+          <div className="container mx-auto grid items-center gap-10 px-4 py-16 sm:py-24 lg:grid-cols-2">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+                <GraduationCap className="h-3.5 w-3.5" /> สมาคมศิษย์เก่า มทร.สุวรรณภูมิ
+              </span>
+              <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
+                ลงทะเบียนสมาชิก
+                <br />
+                <span className="text-primary">ออนไลน์ ง่าย รวดเร็ว</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+                สมัครสมาชิกสมาคมศิษย์เก่า กรอกข้อมูล แนบสลิปโอนเงิน
+                และตรวจสอบสถานะการสมัครได้ทุกที่ทุกเวลา
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  to="/apply"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
+                >
+                  เริ่มสมัครสมาชิก <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/status"
+                  className="inline-flex items-center gap-2 rounded-md border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-accent"
+                >
+                  <Search className="h-4 w-4" /> ตรวจสอบสถานะ
+                </Link>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="rounded-2xl border bg-card p-8 shadow-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 rounded-lg bg-accent/50 p-4">
+                    <div className="rounded-md bg-primary/10 p-2 text-primary"><Users className="h-5 w-5" /></div>
+                    <div>
+                      <div className="font-semibold">ค่าสมัครสมาชิก</div>
+                      <div className="text-sm text-muted-foreground">200 บาท (ครั้งเดียว)</div>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">โอนเงินผ่าน</div>
+                    <div className="mt-1 font-semibold">ธนาคารออมสิน</div>
+                    <div className="text-sm text-muted-foreground">สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    {["กรอกข้อมูล", "แนบสลิป", "รอยืนยัน"].map((s, i) => (
+                      <div key={s} className="rounded-lg border bg-background p-3">
+                        <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">{i + 1}</div>
+                        <div className="mt-2 font-medium">{s}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
+          {[
+            { icon: GraduationCap, t: "เครือข่ายศิษย์เก่า", d: "เชื่อมโยงรุ่นพี่รุ่นน้องและกิจกรรมของสมาคมตลอดทั้งปี" },
+            { icon: ShieldCheck, t: "ข้อมูลปลอดภัย", d: "เก็บรักษาข้อมูลส่วนตัวบนระบบคลาวด์ที่ได้มาตรฐาน" },
+            { icon: Search, t: "ตรวจสอบสถานะได้เอง", d: "ใช้ชื่อหรือเบอร์โทรค้นหาสถานะการสมัครได้ทันที" },
+          ].map(({ icon: Icon, t, d }) => (
+            <div key={t} className="rounded-xl border bg-card p-6 transition hover:shadow-md">
+              <div className="inline-flex rounded-lg bg-primary/10 p-3 text-primary"><Icon className="h-5 w-5" /></div>
+              <h3 className="mt-4 text-lg font-semibold">{t}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{d}</p>
+            </div>
+          ))}
+        </section>
+      </main>
+      <footer className="border-t bg-card">
+        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ
+        </div>
+      </footer>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
