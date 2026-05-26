@@ -156,9 +156,15 @@ function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {loading && (
-                  <tr><td colSpan={5} className="py-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></td></tr>
-                )}
+                {loading && Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={`sk-${i}`} className="border-t">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="px-4 py-3"><div className="flex justify-end gap-1"><Skeleton className="h-7 w-14" /><Skeleton className="h-7 w-14" /><Skeleton className="h-7 w-20" /><Skeleton className="h-7 w-12" /></div></td>
+                  </tr>
+                ))}
                 {!loading && rows.length === 0 && (
                   <tr><td colSpan={5} className="py-10 text-center text-muted-foreground">ยังไม่มีผู้ใช้แอดมิน</td></tr>
                 )}
