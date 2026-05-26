@@ -112,8 +112,9 @@ function AdminDashboard() {
     URL.revokeObjectURL(url);
   }
 
-  const totalAll = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts]);
+  const totalAll = useMemo(() => Object.values(counts ?? {}).reduce((a, b) => a + b, 0), [counts]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const countsLoading = counts === null;
 
   if (admin.loading) {
     return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
