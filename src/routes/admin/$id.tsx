@@ -67,7 +67,47 @@ function ApplicationDetail() {
     navigate({ to: "/admin" });
   }
 
-  if (loading || admin.loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (admin.loading || loading) {
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <header className="border-b bg-card">
+          <div className="container mx-auto flex h-14 items-center gap-3 px-4">
+            <Link to="/admin" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" /> กลับ Dashboard
+            </Link>
+          </div>
+        </header>
+        <main className="container mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <div className="rounded-xl border bg-card p-6 shadow-sm space-y-3">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-4 w-80" />
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border bg-card p-5 shadow-sm space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/6" />
+              </div>
+            ))}
+          </div>
+          <aside className="space-y-4">
+            <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+            <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          </aside>
+        </main>
+      </div>
+    );
+  }
   if (!row) return <div className="p-10 text-center">ไม่พบใบสมัคร</div>;
 
   return (
