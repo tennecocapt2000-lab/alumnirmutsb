@@ -101,5 +101,9 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  button, input, select, textarea, optgroup {
+    font-family: inherit;
   }
 }
