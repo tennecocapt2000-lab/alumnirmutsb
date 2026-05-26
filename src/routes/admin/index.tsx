@@ -95,21 +95,27 @@ function AdminDashboard() {
   }
 
   async function exportCsv() {
-    const { data, error } = await supabase
-      .from("applications").select("*").order("created_at", { ascending: false });
-    if (error || !data) return toast.error("ส่งออกไม่สำเร็จ");
-    const headers = Object.keys(data[0] ?? {});
-    const csv = [
-      headers.join(","),
-      ...data.map((r) => headers.map((h) => csvCell((r as Record<string, unknown>)[h])).join(",")),
-    ].join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `applications_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("applications").select("*").order("created_at", { ascending: false });
+      if (error || !data) return toast.error("ส่งออกไม่สำเร็จ");
+      const headers = Object.keys(data[0] ?? {});
+      const csv = [
+        headers.join(","),
+        ...data.map((r) => headers.map((h) => csvCell((r as Record<string, unknown>)[h])).join(",")),
+      ].join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `applications_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
   }
 
   const totalAll = useMemo(() => Object.values(counts ?? {}).reduce((a, b) => a + b, 0), [counts]);
