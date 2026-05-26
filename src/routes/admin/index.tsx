@@ -203,8 +203,8 @@ function AdminDashboard() {
               <input type="date" className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} />
             </div>
             <div className="flex items-end md:col-span-1">
-              <button onClick={exportCsv} className="inline-flex w-full items-center justify-center gap-1 rounded-md border bg-background px-3 py-2 text-sm hover:bg-accent">
-                <Download className="h-4 w-4" /> CSV
+              <button onClick={exportCsv} disabled={exporting} className="inline-flex w-full items-center justify-center gap-1 rounded-md border bg-background px-3 py-2 text-sm hover:bg-accent disabled:opacity-60">
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} CSV
               </button>
             </div>
           </div>
