@@ -208,7 +208,7 @@ function ApplicationDetail() {
               <textarea rows={3} className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={row.admin_note ?? ""} onChange={(e) => setRow({ ...row, admin_note: e.target.value })} />
             </label>
             <button disabled={saving} onClick={save} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} บันทึก
+              {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</> : <><Save className="h-4 w-4" /> บันทึก</>}
             </button>
             <button onClick={remove} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-destructive/40 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
               <Trash2 className="h-4 w-4" /> ลบใบสมัคร
