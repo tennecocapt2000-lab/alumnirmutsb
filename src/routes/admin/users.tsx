@@ -17,6 +17,7 @@ import {
   Ban, CheckCircle2, KeyRound, Trash2, ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({ meta: [{ title: "จัดการผู้ใช้แอดมิน" }] }),
