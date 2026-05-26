@@ -237,3 +237,23 @@ function Info({ k, v }: { k: string; v: unknown }) {
     </div>
   );
 }
+
+function SlipImage({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  if (errored) return <div className="p-6 text-center text-sm text-muted-foreground">ไม่สามารถโหลดรูปได้</div>;
+  return (
+    <div className="relative">
+      {!loaded && <Skeleton className="h-64 w-full rounded-none" />}
+      <img
+        src={src}
+        alt="สลิป"
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setErrored(true)}
+        className={`w-full transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`}
+      />
+    </div>
+  );
+}
