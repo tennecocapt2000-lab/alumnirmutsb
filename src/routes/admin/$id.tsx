@@ -183,7 +183,7 @@ function ApplicationDetail() {
             <h3 className="font-semibold">หลักฐานการโอนเงิน</h3>
             {slipUrl ? (
               <a href={slipUrl} target="_blank" rel="noreferrer" className="mt-3 block overflow-hidden rounded-md border">
-                <img src={slipUrl} alt="สลิป" loading="lazy" className="w-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                <SlipImage src={slipUrl} />
                 <div className="flex items-center justify-center gap-2 border-t bg-muted/30 py-2 text-sm">
                   <FileText className="h-4 w-4" /> เปิดไฟล์ขนาดเต็ม
                 </div>
