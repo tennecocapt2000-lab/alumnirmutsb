@@ -70,24 +70,33 @@ function StatusPage() {
             placeholder="เช่น 081-234-5678 หรือ สมชาย ใจดี"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            disabled={loading}
           />
-          <button className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            <Search className="h-4 w-4" /> ค้นหา
+          <button disabled={loading} className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} {loading ? "กำลังค้นหา..." : "ค้นหา"}
           </button>
         </form>
 
         <div className="mt-6 space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> กำลังค้นหา...
+          {loading && Array.from({ length: 2 }).map((_, i) => (
+            <div key={`sk-${i}`} className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <Skeleton className="mt-4 h-3 w-40" />
             </div>
-          )}
+          ))}
           {results && !loading && results.length === 0 && (
             <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
               ไม่พบใบสมัคร กรุณาตรวจสอบคำค้นหา
             </div>
           )}
-          {results && results.map((r) => (
+          {!loading && results && results.map((r) => (
             <div key={r.id} className={`rounded-xl border bg-card p-5 shadow-sm transition ${r.id === id ? "ring-2 ring-primary" : ""}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
