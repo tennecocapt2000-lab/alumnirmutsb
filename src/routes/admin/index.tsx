@@ -30,8 +30,9 @@ function AdminDashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!admin.loading && !admin.isAdmin) {
