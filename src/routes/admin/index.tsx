@@ -281,6 +281,15 @@ function StatCard({ label, value, status }: { label: string; value: number; stat
   );
 }
 
+function StatCardSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <Skeleton className="h-3.5 w-20" />
+      <Skeleton className="mt-2 h-7 w-16" />
+    </div>
+  );
+}
+
 function csvCell(v: unknown): string {
   if (v == null) return "";
   const s = String(v).replace(/"/g, '""');
