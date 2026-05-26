@@ -5,6 +5,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { STATUSES, statusBadgeClass, statusLabel } from "@/lib/status";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Save, Trash2, FileText } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/$id")({
   head: () => ({ meta: [{ title: "รายละเอียดใบสมัคร" }] }),
@@ -66,7 +67,47 @@ function ApplicationDetail() {
     navigate({ to: "/admin" });
   }
 
-  if (loading || admin.loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (admin.loading || loading) {
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <header className="border-b bg-card">
+          <div className="container mx-auto flex h-14 items-center gap-3 px-4">
+            <Link to="/admin" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" /> กลับ Dashboard
+            </Link>
+          </div>
+        </header>
+        <main className="container mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <div className="rounded-xl border bg-card p-6 shadow-sm space-y-3">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-4 w-80" />
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border bg-card p-5 shadow-sm space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/6" />
+              </div>
+            ))}
+          </div>
+          <aside className="space-y-4">
+            <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+            <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          </aside>
+        </main>
+      </div>
+    );
+  }
   if (!row) return <div className="p-10 text-center">ไม่พบใบสมัคร</div>;
 
   return (
@@ -142,7 +183,7 @@ function ApplicationDetail() {
             <h3 className="font-semibold">หลักฐานการโอนเงิน</h3>
             {slipUrl ? (
               <a href={slipUrl} target="_blank" rel="noreferrer" className="mt-3 block overflow-hidden rounded-md border">
-                <img src={slipUrl} alt="สลิป" loading="lazy" className="w-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                <SlipImage src={slipUrl} />
                 <div className="flex items-center justify-center gap-2 border-t bg-muted/30 py-2 text-sm">
                   <FileText className="h-4 w-4" /> เปิดไฟล์ขนาดเต็ม
                 </div>
@@ -167,7 +208,7 @@ function ApplicationDetail() {
               <textarea rows={3} className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={row.admin_note ?? ""} onChange={(e) => setRow({ ...row, admin_note: e.target.value })} />
             </label>
             <button disabled={saving} onClick={save} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} บันทึก
+              {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</> : <><Save className="h-4 w-4" /> บันทึก</>}
             </button>
             <button onClick={remove} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-destructive/40 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
               <Trash2 className="h-4 w-4" /> ลบใบสมัคร
@@ -193,6 +234,26 @@ function Info({ k, v }: { k: string; v: unknown }) {
     <div className="flex justify-between gap-3 border-b border-dashed py-1.5 last:border-0">
       <dt className="text-muted-foreground">{k}</dt>
       <dd className="text-right font-medium">{v ? String(v) : "-"}</dd>
+    </div>
+  );
+}
+
+function SlipImage({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  if (errored) return <div className="p-6 text-center text-sm text-muted-foreground">ไม่สามารถโหลดรูปได้</div>;
+  return (
+    <div className="relative">
+      {!loaded && <Skeleton className="h-64 w-full rounded-none" />}
+      <img
+        src={src}
+        alt="สลิป"
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setErrored(true)}
+        className={`w-full transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`}
+      />
     </div>
   );
 }

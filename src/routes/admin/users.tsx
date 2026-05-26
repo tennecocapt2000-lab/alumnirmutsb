@@ -17,6 +17,7 @@ import {
   Ban, CheckCircle2, KeyRound, Trash2, ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({ meta: [{ title: "จัดการผู้ใช้แอดมิน" }] }),
@@ -34,7 +35,7 @@ function AdminUsersPage() {
   const del = useServerFn(deleteAdminUser);
 
   const [rows, setRows] = useState<AdminUserRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<AdminUserRow | null>(null);
 
@@ -155,9 +156,15 @@ function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {loading && (
-                  <tr><td colSpan={5} className="py-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></td></tr>
-                )}
+                {loading && Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={`sk-${i}`} className="border-t">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="px-4 py-3"><div className="flex justify-end gap-1"><Skeleton className="h-7 w-14" /><Skeleton className="h-7 w-14" /><Skeleton className="h-7 w-20" /><Skeleton className="h-7 w-12" /></div></td>
+                  </tr>
+                ))}
                 {!loading && rows.length === 0 && (
                   <tr><td colSpan={5} className="py-10 text-center text-muted-foreground">ยังไม่มีผู้ใช้แอดมิน</td></tr>
                 )}
@@ -273,7 +280,7 @@ function CreateDialog({ onClose, onSubmit }: { onClose: () => void; onSubmit: (e
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">ยกเลิก</button>
           <button type="submit" disabled={saving} className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} บันทึก
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</> : "บันทึก"}
           </button>
         </div>
       </form>
@@ -308,7 +315,7 @@ function EditDialog({ user, onClose, onSubmit }: { user: AdminUserRow; onClose: 
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">ยกเลิก</button>
           <button type="submit" disabled={saving} className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} บันทึก
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</> : "บันทึก"}
           </button>
         </div>
       </form>

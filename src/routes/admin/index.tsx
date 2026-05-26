@@ -5,6 +5,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { STATUSES, statusBadgeClass, statusLabel } from "@/lib/status";
 import { Loader2, LogOut, Search, Download, ShieldAlert, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Dashboard — แอดมิน" }] }),
@@ -29,8 +30,9 @@ function AdminDashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!admin.loading && !admin.isAdmin) {
@@ -93,25 +95,32 @@ function AdminDashboard() {
   }
 
   async function exportCsv() {
-    const { data, error } = await supabase
-      .from("applications").select("*").order("created_at", { ascending: false });
-    if (error || !data) return toast.error("ส่งออกไม่สำเร็จ");
-    const headers = Object.keys(data[0] ?? {});
-    const csv = [
-      headers.join(","),
-      ...data.map((r) => headers.map((h) => csvCell((r as Record<string, unknown>)[h])).join(",")),
-    ].join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `applications_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("applications").select("*").order("created_at", { ascending: false });
+      if (error || !data) return toast.error("ส่งออกไม่สำเร็จ");
+      const headers = Object.keys(data[0] ?? {});
+      const csv = [
+        headers.join(","),
+        ...data.map((r) => headers.map((h) => csvCell((r as Record<string, unknown>)[h])).join(",")),
+      ].join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `applications_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
   }
 
-  const totalAll = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts]);
+  const totalAll = useMemo(() => Object.values(counts ?? {}).reduce((a, b) => a + b, 0), [counts]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const countsLoading = counts === null;
 
   if (admin.loading) {
     return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -150,10 +159,16 @@ function AdminDashboard() {
       <main className="container mx-auto px-4 py-6">
         {/* Stats */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="ทั้งหมด" value={totalAll} />
-          {STATUSES.map((s) => (
-            <StatCard key={s.value} label={s.label} value={counts[s.value] ?? 0} status={s.value} />
-          ))}
+          {countsLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
+          ) : (
+            <>
+              <StatCard label="ทั้งหมด" value={totalAll} />
+              {STATUSES.map((s) => (
+                <StatCard key={s.value} label={s.label} value={counts![s.value] ?? 0} status={s.value} />
+              ))}
+            </>
+          )}
         </div>
 
         {/* Filters */}
@@ -188,8 +203,8 @@ function AdminDashboard() {
               <input type="date" className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} />
             </div>
             <div className="flex items-end md:col-span-1">
-              <button onClick={exportCsv} className="inline-flex w-full items-center justify-center gap-1 rounded-md border bg-background px-3 py-2 text-sm hover:bg-accent">
-                <Download className="h-4 w-4" /> CSV
+              <button onClick={exportCsv} disabled={exporting} className="inline-flex w-full items-center justify-center gap-1 rounded-md border bg-background px-3 py-2 text-sm hover:bg-accent disabled:opacity-60">
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} CSV
               </button>
             </div>
           </div>
@@ -210,9 +225,16 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {loading && (
-                  <tr><td colSpan={6} className="py-10 text-center text-muted-foreground"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></td></tr>
-                )}
+                {loading && Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={`sk-${i}`} className="border-t">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="px-4 py-3 text-right"><Skeleton className="ml-auto h-7 w-14" /></td>
+                  </tr>
+                ))}
                 {!loading && rows.length === 0 && (
                   <tr><td colSpan={6} className="py-10 text-center text-muted-foreground">ไม่มีข้อมูล</td></tr>
                 )}
@@ -255,6 +277,15 @@ function StatCard({ label, value, status }: { label: string; value: number; stat
         <div className="text-2xl font-bold">{value.toLocaleString("th-TH")}</div>
         {status && <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeClass(status)}`}>●</span>}
       </div>
+    </div>
+  );
+}
+
+function StatCardSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <Skeleton className="h-3.5 w-20" />
+      <Skeleton className="mt-2 h-7 w-16" />
     </div>
   );
 }
