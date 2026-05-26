@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2 } from "lucide-react";
 import { statusBadgeClass, statusLabel } from "@/lib/status";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SearchParams = { q?: string; id?: string };
 
