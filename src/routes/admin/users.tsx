@@ -35,7 +35,7 @@ function AdminUsersPage() {
   const del = useServerFn(deleteAdminUser);
 
   const [rows, setRows] = useState<AdminUserRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<AdminUserRow | null>(null);
 
