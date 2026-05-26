@@ -280,7 +280,7 @@ function CreateDialog({ onClose, onSubmit }: { onClose: () => void; onSubmit: (e
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">ยกเลิก</button>
           <button type="submit" disabled={saving} className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} บันทึก
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</> : "บันทึก"}
           </button>
         </div>
       </form>
@@ -315,7 +315,7 @@ function EditDialog({ user, onClose, onSubmit }: { user: AdminUserRow; onClose: 
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">ยกเลิก</button>
           <button type="submit" disabled={saving} className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} บันทึก
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</> : "บันทึก"}
           </button>
         </div>
       </form>
