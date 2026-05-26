@@ -225,9 +225,16 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {loading && (
-                  <tr><td colSpan={6} className="py-10 text-center text-muted-foreground"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></td></tr>
-                )}
+                {loading && Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={`sk-${i}`} className="border-t">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="px-4 py-3 text-right"><Skeleton className="ml-auto h-7 w-14" /></td>
+                  </tr>
+                ))}
                 {!loading && rows.length === 0 && (
                   <tr><td colSpan={6} className="py-10 text-center text-muted-foreground">ไม่มีข้อมูล</td></tr>
                 )}
