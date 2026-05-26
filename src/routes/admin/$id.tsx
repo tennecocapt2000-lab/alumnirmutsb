@@ -5,6 +5,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { STATUSES, statusBadgeClass, statusLabel } from "@/lib/status";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Save, Trash2, FileText } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/$id")({
   head: () => ({ meta: [{ title: "รายละเอียดใบสมัคร" }] }),
