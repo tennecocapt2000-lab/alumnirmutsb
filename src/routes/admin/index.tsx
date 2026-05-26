@@ -5,6 +5,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { STATUSES, statusBadgeClass, statusLabel } from "@/lib/status";
 import { Loader2, LogOut, Search, Download, ShieldAlert, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Dashboard — แอดมิน" }] }),
