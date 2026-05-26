@@ -153,10 +153,16 @@ function AdminDashboard() {
       <main className="container mx-auto px-4 py-6">
         {/* Stats */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="ทั้งหมด" value={totalAll} />
-          {STATUSES.map((s) => (
-            <StatCard key={s.value} label={s.label} value={counts[s.value] ?? 0} status={s.value} />
-          ))}
+          {countsLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
+          ) : (
+            <>
+              <StatCard label="ทั้งหมด" value={totalAll} />
+              {STATUSES.map((s) => (
+                <StatCard key={s.value} label={s.label} value={counts![s.value] ?? 0} status={s.value} />
+              ))}
+            </>
+          )}
         </div>
 
         {/* Filters */}
