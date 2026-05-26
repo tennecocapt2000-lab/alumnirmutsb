@@ -272,7 +272,7 @@ function ApplyPage() {
                 className="inline-flex items-center gap-2 rounded-md bg-success px-6 py-2 text-sm font-medium text-success-foreground hover:bg-success/90 disabled:opacity-60"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                ส่งใบสมัคร
+                {submitting ? "กำลังส่งใบสมัคร..." : "ส่งใบสมัคร"}
               </button>
             )}
           </div>
