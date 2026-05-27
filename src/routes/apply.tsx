@@ -67,6 +67,34 @@ function ApplyPage() {
   const [form, setForm] = useState<FormState>(init);
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [payment, setPayment] = useState<PaymentSettings | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(true);
+  const [paymentError, setPaymentError] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setPaymentLoading(true);
+      const { data, error } = await supabase
+        .from("payment_settings")
+        .select("bank_name,account_name,account_number,application_fee,qr_code_url,payment_instruction,show_qr_code")
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error || !data) {
+        setPaymentError(true);
+      } else {
+        setPayment({
+          bank_name: data.bank_name,
+          account_name: data.account_name,
+          account_number: data.account_number,
+          application_fee: Number(data.application_fee),
+          qr_code_url: data.qr_code_url,
+          payment_instruction: data.payment_instruction,
+          show_qr_code: !!data.show_qr_code,
+        });
+      }
+      setPaymentLoading(false);
+    })();
+  }, []);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((s) => ({ ...s, [k]: v }));
 
