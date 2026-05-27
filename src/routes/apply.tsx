@@ -246,14 +246,47 @@ function ApplyPage() {
 
           {step === 3 && (
             <div className="space-y-5">
-              <div className="rounded-lg border bg-accent/30 p-5">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">โอนเงินค่าสมัคร</div>
-                <div className="mt-2 text-2xl font-bold text-primary">200 บาท</div>
-                <div className="mt-3 space-y-1 text-sm">
-                  <div><span className="text-muted-foreground">ธนาคาร: </span><span className="font-medium">ออมสิน</span></div>
-                  <div><span className="text-muted-foreground">ชื่อบัญชี: </span><span className="font-medium">สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ</span></div>
+              {paymentLoading ? (
+                <div className="rounded-lg border bg-accent/30 p-5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="mt-3 h-8 w-40" />
+                  <div className="mt-3 space-y-2">
+                    <Skeleton className="h-4 w-56" />
+                    <Skeleton className="h-4 w-64" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <Skeleton className="mt-4 h-40 w-40" />
                 </div>
-              </div>
+              ) : paymentError || !payment ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
+                  ยังไม่ได้ตั้งค่าข้อมูลการชำระเงิน กรุณาติดต่อแอดมิน
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-accent/30 p-5">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">โอนเงินค่าสมัคร</div>
+                  <div className="mt-2 text-2xl font-bold text-primary">
+                    {payment.application_fee.toLocaleString("th-TH")} บาท
+                  </div>
+                  <div className="mt-3 space-y-1 text-sm">
+                    <div><span className="text-muted-foreground">ธนาคาร: </span><span className="font-medium">{payment.bank_name}</span></div>
+                    <div><span className="text-muted-foreground">ชื่อบัญชี: </span><span className="font-medium">{payment.account_name}</span></div>
+                    <div><span className="text-muted-foreground">เลขที่บัญชี: </span><span className="font-medium">{payment.account_number}</span></div>
+                  </div>
+                  {payment.show_qr_code && payment.qr_code_url && (
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                      <img src={payment.qr_code_url} alt="QR Code" loading="lazy" className="h-48 w-48 rounded-md border bg-white object-contain p-2" />
+                      <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <QrCode className="h-3 w-3" /> สแกนเพื่อชำระเงิน
+                      </div>
+                    </div>
+                  )}
+                  {payment.payment_instruction && (
+                    <p className="mt-4 rounded-md bg-background/60 p-3 text-sm text-muted-foreground">
+                      {payment.payment_instruction}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="วันที่โอนเงิน" required>
                   <input type="date" className={inputCls} value={form.payment_date} onChange={(e) => update("payment_date", e.target.value)} />
