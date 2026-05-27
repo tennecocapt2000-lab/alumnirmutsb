@@ -147,6 +147,7 @@ function AdminDashboard() {
             <GraduationCap className="h-5 w-5" /> หลังบ้านสมาคม
           </Link>
           <div className="flex items-center gap-3">
+            <Link to="/admin/payment-settings" className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">ตั้งค่าการชำระเงิน</Link>
             <Link to="/admin/users" className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">จัดการแอดมิน</Link>
             <span className="hidden text-sm text-muted-foreground sm:inline">{admin.email}</span>
             <button onClick={logout} className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
