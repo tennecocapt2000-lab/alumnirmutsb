@@ -123,8 +123,12 @@ function ApplyPage() {
         ...form,
         birth_date: form.birth_date || null,
         payment_date: form.payment_date || null,
-        payment_amount: 200,
+        payment_amount: payment?.application_fee ?? 200,
         payment_slip_url: path,
+        payment_bank_name: payment?.bank_name ?? null,
+        payment_account_name: payment?.account_name ?? null,
+        payment_account_number: payment?.account_number ?? null,
+        payment_qr_code_url: payment?.qr_code_url ?? null,
         status: "pending",
       };
       const { data, error } = await supabase.from("applications").insert(payload).select("id").single();
