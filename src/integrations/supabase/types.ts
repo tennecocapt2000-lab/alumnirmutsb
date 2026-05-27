@@ -38,8 +38,12 @@ export type Database = {
           major: string | null
           member_no: string | null
           note: string | null
+          payment_account_name: string | null
+          payment_account_number: string | null
           payment_amount: number
+          payment_bank_name: string | null
           payment_date: string | null
+          payment_qr_code_url: string | null
           payment_slip_url: string | null
           phone: string
           prefix: string
@@ -80,8 +84,12 @@ export type Database = {
           major?: string | null
           member_no?: string | null
           note?: string | null
+          payment_account_name?: string | null
+          payment_account_number?: string | null
           payment_amount?: number
+          payment_bank_name?: string | null
           payment_date?: string | null
+          payment_qr_code_url?: string | null
           payment_slip_url?: string | null
           phone: string
           prefix: string
@@ -122,8 +130,12 @@ export type Database = {
           major?: string | null
           member_no?: string | null
           note?: string | null
+          payment_account_name?: string | null
+          payment_account_number?: string | null
           payment_amount?: number
+          payment_bank_name?: string | null
           payment_date?: string | null
+          payment_qr_code_url?: string | null
           payment_slip_url?: string | null
           phone?: string
           prefix?: string
@@ -140,6 +152,51 @@ export type Database = {
           work_road?: string | null
           work_soi?: string | null
           work_subdistrict?: string | null
+        }
+        Relationships: []
+      }
+      payment_settings: {
+        Row: {
+          account_name: string
+          account_number: string
+          application_fee: number
+          bank_name: string
+          created_at: string
+          id: string
+          is_active: boolean
+          payment_instruction: string | null
+          qr_code_url: string | null
+          show_qr_code: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          application_fee?: number
+          bank_name: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          payment_instruction?: string | null
+          qr_code_url?: string | null
+          show_qr_code?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          application_fee?: number
+          bank_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          payment_instruction?: string | null
+          qr_code_url?: string | null
+          show_qr_code?: boolean
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
