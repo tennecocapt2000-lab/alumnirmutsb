@@ -1,9 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ChevronRight, Upload, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Upload, Loader2, QrCode } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+type PaymentSettings = {
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+  application_fee: number;
+  qr_code_url: string | null;
+  payment_instruction: string | null;
+  show_qr_code: boolean;
+};
 
 export const Route = createFileRoute("/apply")({
   head: () => ({ meta: [{ title: "สมัครสมาชิก — สมาคมศิษย์เก่า" }] }),

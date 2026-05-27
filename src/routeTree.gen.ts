@@ -14,6 +14,7 @@ import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminPaymentSettingsRouteImport } from './routes/admin/payment-settings'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminIdRouteImport } from './routes/admin/$id'
 
@@ -42,6 +43,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPaymentSettingsRoute = AdminPaymentSettingsRouteImport.update({
+  id: '/admin/payment-settings',
+  path: '/admin/payment-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/status': typeof StatusRoute
   '/admin/$id': typeof AdminIdRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/payment-settings': typeof AdminPaymentSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute
   '/admin/$id': typeof AdminIdRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/payment-settings': typeof AdminPaymentSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/status': typeof StatusRoute
   '/admin/$id': typeof AdminIdRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/payment-settings': typeof AdminPaymentSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/admin/$id'
     | '/admin/login'
+    | '/admin/payment-settings'
     | '/admin/users'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/admin/$id'
     | '/admin/login'
+    | '/admin/payment-settings'
     | '/admin/users'
     | '/admin'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/admin/$id'
     | '/admin/login'
+    | '/admin/payment-settings'
     | '/admin/users'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   StatusRoute: typeof StatusRoute
   AdminIdRoute: typeof AdminIdRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminPaymentSettingsRoute: typeof AdminPaymentSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/payment-settings': {
+      id: '/admin/payment-settings'
+      path: '/admin/payment-settings'
+      fullPath: '/admin/payment-settings'
+      preLoaderRoute: typeof AdminPaymentSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/login': {
       id: '/admin/login'
       path: '/admin/login'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatusRoute: StatusRoute,
   AdminIdRoute: AdminIdRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminPaymentSettingsRoute: AdminPaymentSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
