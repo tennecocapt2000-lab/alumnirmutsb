@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
+import { uploadPaymentQr } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -41,6 +43,7 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
+  const uploadQrFn = useServerFn(uploadPaymentQr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -102,19 +105,25 @@ function PaymentSettingsPage() {
       });
     }, 30000);
     try {
-      const ext = file.type === "image/jpeg" ? "jpg" : file.type === "image/webp" ? "webp" : "png";
-      const path = `qr-${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("payment-qr").upload(path, file, {
-        upsert: false,
-        contentType: file.type,
-      });
-
-      if (uploadError) {
-        throw uploadError;
+      const buf = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(
+          null,
+          Array.from(bytes.subarray(i, i + chunk)) as unknown as number[],
+        );
       }
 
-      const { data: publicUrl } = supabase.storage.from("payment-qr").getPublicUrl(path);
-      update("qr_code_url", publicUrl.publicUrl);
+      const res = await uploadQrFn({
+        data: {
+          filename: file.name,
+          contentType: file.type as "image/jpeg" | "image/png" | "image/webp",
+          base64: btoa(binary),
+        },
+      });
+      update("qr_code_url", res.url);
       toast.success("อัปโหลด QR Code สำเร็จ");
     } catch (e: any) {
       console.error("[payment-settings] upload error", e);
