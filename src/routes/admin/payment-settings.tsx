@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
@@ -42,13 +43,12 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
+  const uploadQrFn = useServerFn(uploadPaymentQr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [form, setForm] = useState<Settings>(initial);
-
-  const uploadQrFn = uploadPaymentQr;
 
   useEffect(() => {
     if (!admin.loading && !admin.isAdmin) navigate({ to: "/admin/login" });
@@ -158,19 +158,49 @@ function PaymentSettingsPage() {
       });
     }, 20000);
     try {
-      const saved = await saveFn({
-        data: {
-          id: form.id,
-          bank_name: form.bank_name.trim(),
-          account_name: form.account_name.trim(),
-          account_number: form.account_number.trim(),
-          application_fee: Number(form.application_fee),
-          qr_code_url: form.qr_code_url,
-          payment_instruction: form.payment_instruction ?? "",
-          show_qr_code: !!form.show_qr_code,
-          is_active: !!form.is_active,
-        },
-      });
+      const payload = {
+        bank_name: form.bank_name.trim(),
+        account_name: form.account_name.trim(),
+        account_number: form.account_number.trim(),
+        application_fee: Number(form.application_fee),
+        qr_code_url: form.qr_code_url || null,
+        payment_instruction: form.payment_instruction ?? "",
+        show_qr_code: !!form.show_qr_code,
+        is_active: !!form.is_active,
+      };
+
+      if (payload.is_active) {
+        let deactivateQuery = supabase
+          .from("payment_settings")
+          .update({ is_active: false })
+          .eq("is_active", true);
+
+        if (form.id) {
+          deactivateQuery = deactivateQuery.neq("id", form.id);
+        }
+
+        const { error: deactivateError } = await deactivateQuery;
+        if (deactivateError) {
+          throw deactivateError;
+        }
+      }
+
+      const { data: saved, error } = form.id
+        ? await supabase
+            .from("payment_settings")
+            .update(payload)
+            .eq("id", form.id)
+            .select("*")
+            .single()
+        : await supabase
+            .from("payment_settings")
+            .insert(payload)
+            .select("*")
+            .single();
+
+      if (error || !saved) {
+        throw error ?? new Error("ไม่สามารถบันทึกข้อมูลได้");
+      }
 
       setForm({
         id: saved.id,
@@ -178,7 +208,7 @@ function PaymentSettingsPage() {
         account_name: saved.account_name ?? "",
         account_number: saved.account_number ?? "",
         application_fee: Number(saved.application_fee ?? 200),
-        qr_code_url: saved.qr_code_url ?? null,
+        qr_code_url: saved.qr_code_url || null,
         payment_instruction: saved.payment_instruction ?? "",
         show_qr_code: !!saved.show_qr_code,
         is_active: !!saved.is_active,
