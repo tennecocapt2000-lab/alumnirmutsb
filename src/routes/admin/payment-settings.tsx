@@ -112,17 +112,28 @@ function PaymentSettingsPage() {
   }
 
   async function save() {
+    if (saving) return;
     if (!form.bank_name.trim() || !form.account_name.trim() || !form.account_number.trim()) {
       toast.error("กรุณากรอกชื่อธนาคาร ชื่อบัญชี และเลขบัญชี");
       return;
     }
     if (!Number.isFinite(form.application_fee) || form.application_fee <= 0) {
-      toast.error("กรุณาระบุจำนวนเงินค่าสมัครที่ถูกต้อง");
+      toast.error("กรุณาระบุจำนวนเงินค่าสมัครที่ถูกต้องที่");
       return;
     }
     setSaving(true);
+    // กันค้าง: timeout 20 วินาที
+    const timeoutId = setTimeout(() => {
+      setSaving((s) => {
+        if (s) toast.error("หมดเวลาเชื่อมต่อ กรุณาลองใหม่");
+        return false;
+      });
+    }, 20000);
     try {
-      const { data: sess } = await supabase.auth.getUser();
+      // อ่าน session แบบ local ไม่ยิง network (กันค้าง)
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id ?? null;
+
       const payload = {
         bank_name: form.bank_name.trim(),
         account_name: form.account_name.trim(),
@@ -132,17 +143,19 @@ function PaymentSettingsPage() {
         payment_instruction: form.payment_instruction,
         show_qr_code: form.show_qr_code,
         is_active: form.is_active,
-        updated_by: sess.user?.id ?? null,
+        updated_by: uid,
       };
 
-      // Ensure only one active record
+      // ขั้นที่ 1: ปิด active ของรายการอื่น ๆ ก่อน (เฉพาะเมื่อต้องการให้แถวนี้ active)
+      // เพื่อกันชน unique index payment_settings_only_one_active
       if (form.is_active) {
-        await supabase
-          .from("payment_settings")
-          .update({ is_active: false })
-          .neq("id", form.id ?? "00000000-0000-0000-0000-000000000000");
+        const q = supabase.from("payment_settings").update({ is_active: false }).eq("is_active", true);
+        const { error: deactErr } = form.id ? await q.neq("id", form.id) : await q;
+        if (deactErr) throw deactErr;
       }
 
+      // ขั้นที่ 2: insert หรือ update แถวหลัก
+      let savedId = form.id;
       if (form.id) {
         const { error } = await supabase.from("payment_settings").update(payload).eq("id", form.id);
         if (error) throw error;
@@ -153,13 +166,19 @@ function PaymentSettingsPage() {
           .select("id")
           .single();
         if (error) throw error;
+        savedId = data.id;
         update("id", data.id);
       }
+
+      clearTimeout(timeoutId);
       toast.success("บันทึกสำเร็จ");
+      console.log("[payment-settings] saved", savedId);
     } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message || "บันทึกไม่สำเร็จ");
+      clearTimeout(timeoutId);
+      console.error("[payment-settings] save error", e);
+      toast.error(e?.message || e?.error_description || "บันทึกไม่สำเร็จ");
     } finally {
+      clearTimeout(timeoutId);
       setSaving(false);
     }
   }
