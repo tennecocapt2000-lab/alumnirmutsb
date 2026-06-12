@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
+import { savePaymentSettings } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -41,6 +43,7 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
+  const saveSettings = useServerFn(savePaymentSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -122,57 +125,42 @@ function PaymentSettingsPage() {
       return;
     }
     setSaving(true);
-    // กันค้าง: timeout 20 วินาที
     const timeoutId = setTimeout(() => {
       setSaving((s) => {
         if (s) toast.error("หมดเวลาเชื่อมต่อ กรุณาลองใหม่");
         return false;
       });
     }, 20000);
+
     try {
-      // อ่าน session แบบ local ไม่ยิง network (กันค้าง)
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user?.id ?? null;
+      const saved = await saveSettings({
+        data: {
+          id: form.id,
+          bank_name: form.bank_name.trim(),
+          account_name: form.account_name.trim(),
+          account_number: form.account_number.trim(),
+          application_fee: form.application_fee,
+          qr_code_url: form.qr_code_url,
+          payment_instruction: form.payment_instruction,
+          show_qr_code: form.show_qr_code,
+          is_active: form.is_active,
+        },
+      });
 
-      const payload = {
-        bank_name: form.bank_name.trim(),
-        account_name: form.account_name.trim(),
-        account_number: form.account_number.trim(),
-        application_fee: form.application_fee,
-        qr_code_url: form.qr_code_url,
-        payment_instruction: form.payment_instruction,
-        show_qr_code: form.show_qr_code,
-        is_active: form.is_active,
-        updated_by: uid,
-      };
-
-      // ขั้นที่ 1: ปิด active ของรายการอื่น ๆ ก่อน (เฉพาะเมื่อต้องการให้แถวนี้ active)
-      // เพื่อกันชน unique index payment_settings_only_one_active
-      if (form.is_active) {
-        const q = supabase.from("payment_settings").update({ is_active: false }).eq("is_active", true);
-        const { error: deactErr } = form.id ? await q.neq("id", form.id) : await q;
-        if (deactErr) throw deactErr;
-      }
-
-      // ขั้นที่ 2: insert หรือ update แถวหลัก
-      let savedId = form.id;
-      if (form.id) {
-        const { error } = await supabase.from("payment_settings").update(payload).eq("id", form.id);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from("payment_settings")
-          .insert(payload)
-          .select("id")
-          .single();
-        if (error) throw error;
-        savedId = data.id;
-        update("id", data.id);
-      }
+      setForm({
+        id: saved.id,
+        bank_name: saved.bank_name ?? "",
+        account_name: saved.account_name ?? "",
+        account_number: saved.account_number ?? "",
+        application_fee: Number(saved.application_fee ?? 200),
+        qr_code_url: saved.qr_code_url ?? null,
+        payment_instruction: saved.payment_instruction ?? "",
+        show_qr_code: !!saved.show_qr_code,
+        is_active: !!saved.is_active,
+      });
 
       clearTimeout(timeoutId);
       toast.success("บันทึกสำเร็จ");
-      console.log("[payment-settings] saved", savedId);
     } catch (e: any) {
       clearTimeout(timeoutId);
       console.error("[payment-settings] save error", e);
