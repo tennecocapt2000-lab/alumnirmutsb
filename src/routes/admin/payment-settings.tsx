@@ -6,7 +6,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
-import { savePaymentSettings, uploadPaymentQr } from "@/lib/payment-settings.functions";
+import { uploadPaymentQr } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -43,11 +43,11 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
-  const saveFn = useServerFn(savePaymentSettings);
   const uploadQrFn = useServerFn(uploadPaymentQr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [form, setForm] = useState<Settings>(initial);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ function PaymentSettingsPage() {
           account_name: data.account_name ?? "",
           account_number: data.account_number ?? "",
           application_fee: Number(data.application_fee ?? 200),
-          qr_code_url: data.qr_code_url ?? null,
+          qr_code_url: data.qr_code_url || null,
           payment_instruction: data.payment_instruction ?? "",
           show_qr_code: !!data.show_qr_code,
           is_active: !!data.is_active,
@@ -97,6 +97,7 @@ function PaymentSettingsPage() {
       return;
     }
     setUploading(true);
+    setLastError(null);
     const timeout = setTimeout(() => {
       setUploading((s) => {
         if (s) toast.error("อัปโหลดช้าผิดปกติ ลองใหม่อีกครั้ง");
@@ -104,7 +105,6 @@ function PaymentSettingsPage() {
       });
     }, 30000);
     try {
-      // file -> base64 (no data: prefix) for server function
       const buf = await file.arrayBuffer();
       let binary = "";
       const bytes = new Uint8Array(buf);
@@ -115,20 +115,21 @@ function PaymentSettingsPage() {
           Array.from(bytes.subarray(i, i + chunk)) as unknown as number[],
         );
       }
-      const base64 = btoa(binary);
 
       const res = await uploadQrFn({
         data: {
           filename: file.name,
           contentType: file.type as "image/jpeg" | "image/png" | "image/webp",
-          base64,
+          base64: btoa(binary),
         },
       });
       update("qr_code_url", res.url);
       toast.success("อัปโหลด QR Code สำเร็จ");
     } catch (e: any) {
       console.error("[payment-settings] upload error", e);
-      toast.error("อัปโหลดไม่สำเร็จ: " + (e?.message || "ไม่ทราบสาเหตุ"));
+      const message = e?.message || "ไม่ทราบสาเหตุ";
+      setLastError("อัปโหลด QR ไม่สำเร็จ: " + message);
+      toast.error("อัปโหลดไม่สำเร็จ: " + message);
     } finally {
       clearTimeout(timeout);
       setUploading(false);
@@ -145,6 +146,7 @@ function PaymentSettingsPage() {
       toast.error("กรุณาระบุจำนวนเงินค่าสมัครที่ถูกต้อง");
       return;
     }
+    setLastError(null);
     setSaving(true);
     const timeout = setTimeout(() => {
       // safety net: never leave the button stuck
@@ -154,19 +156,49 @@ function PaymentSettingsPage() {
       });
     }, 20000);
     try {
-      const saved = await saveFn({
-        data: {
-          id: form.id,
-          bank_name: form.bank_name.trim(),
-          account_name: form.account_name.trim(),
-          account_number: form.account_number.trim(),
-          application_fee: Number(form.application_fee),
-          qr_code_url: form.qr_code_url,
-          payment_instruction: form.payment_instruction ?? "",
-          show_qr_code: !!form.show_qr_code,
-          is_active: !!form.is_active,
-        },
-      });
+      const payload = {
+        bank_name: form.bank_name.trim(),
+        account_name: form.account_name.trim(),
+        account_number: form.account_number.trim(),
+        application_fee: Number(form.application_fee),
+        qr_code_url: form.qr_code_url || null,
+        payment_instruction: form.payment_instruction ?? "",
+        show_qr_code: !!form.show_qr_code,
+        is_active: !!form.is_active,
+      };
+
+      if (payload.is_active) {
+        let deactivateQuery = supabase
+          .from("payment_settings")
+          .update({ is_active: false })
+          .eq("is_active", true);
+
+        if (form.id) {
+          deactivateQuery = deactivateQuery.neq("id", form.id);
+        }
+
+        const { error: deactivateError } = await deactivateQuery;
+        if (deactivateError) {
+          throw deactivateError;
+        }
+      }
+
+      const { data: saved, error } = form.id
+        ? await supabase
+            .from("payment_settings")
+            .update(payload)
+            .eq("id", form.id)
+            .select("*")
+            .single()
+        : await supabase
+            .from("payment_settings")
+            .insert(payload)
+            .select("*")
+            .single();
+
+      if (error || !saved) {
+        throw error ?? new Error("ไม่สามารถบันทึกข้อมูลได้");
+      }
 
       setForm({
         id: saved.id,
@@ -174,7 +206,7 @@ function PaymentSettingsPage() {
         account_name: saved.account_name ?? "",
         account_number: saved.account_number ?? "",
         application_fee: Number(saved.application_fee ?? 200),
-        qr_code_url: saved.qr_code_url ?? null,
+        qr_code_url: saved.qr_code_url || null,
         payment_instruction: saved.payment_instruction ?? "",
         show_qr_code: !!saved.show_qr_code,
         is_active: !!saved.is_active,
@@ -186,6 +218,7 @@ function PaymentSettingsPage() {
         e?.message ||
         e?.error_description ||
         (typeof e === "string" ? e : "ไม่ทราบสาเหตุ");
+      setLastError("บันทึกไม่สำเร็จ: " + msg);
       toast.error("บันทึกไม่สำเร็จ: " + msg);
     } finally {
       clearTimeout(timeout);
@@ -231,6 +264,11 @@ function PaymentSettingsPage() {
               </div>
             ) : (
               <div className="mt-5 space-y-4">
+                {lastError && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {lastError}
+                  </div>
+                )}
                 <Field label="ชื่อธนาคาร" required>
                   <input className={inputCls} value={form.bank_name} onChange={(e) => update("bank_name", e.target.value)} />
                 </Field>
