@@ -1,50 +1,46 @@
-## What’s actually broken
+## เป้าหมาย
+ทำหน้า `/admin/payment-settings` ให้บันทึกได้จริงแบบเสถียร ลดการค้าง และตัด flow ที่ซับซ้อนเกินจำเป็นออก
 
-การกด **บันทึก** ที่ `/admin/payment-settings` ตอนนี้ไม่ได้ช้าเฉย ๆ แต่ **เรียก server function ไม่สำเร็จ** ทำให้บันทึกไม่ได้เลย
+## สิ่งที่จะทำ
+1. แก้สิทธิ์ฐานข้อมูลของ `payment_settings` และ `user_roles`
+- เพิ่ม grant ให้ role ที่ระบบใช้เข้าถึงข้อมูลได้จริง
+- คงกติกาสิทธิ์เดิมไว้ให้เฉพาะแอดมินแก้ไขได้
+- ตรวจสอบให้หน้าแอดมินอ่าน role และบันทึก `payment_settings` ผ่าน backend ได้ถูกต้อง
 
-หลักฐานที่เจอ:
-- runtime log มี error ชัดเจน: `Server function info not found for src_lib_payment-settings_functions_ts--savePaymentSettings_createServerFn_handler`
-- ไฟล์ `src/lib/payment-settings.functions.ts` มี helper `assertAdmin` อยู่ในไฟล์เดียวกับ `createServerFn` ซึ่งเป็น pattern ที่ TanStack Start พังได้ใน production/runtime split
-- `payment_settings` table และ policy มีอยู่แล้ว แต่ตอนนี้ยังไม่มีข้อมูลแถวล่าสุด จึงยืนยันได้ว่าปัญหาอยู่ที่ save flow มากกว่าข้อมูลเดิมในฐานข้อมูล
-- `src/styles.css` ยังมีลำดับ `@import/@source` ที่ผิด ทำให้มี Vite error overlay ซ้อนอยู่ด้วย และอาจทำให้ดูเหมือนหน้า “ค้าง” เพิ่มขึ้น
+2. รื้อ flow หน้า `/admin/payment-settings` ให้เหลือทางเดียว
+- ใช้ server function สำหรับการบันทึกทั้งหมดแทนการผสม client write กับ server upload
+- ให้หน้าเว็บทำแค่ validate ฟอร์ม, เรียก save, แสดงสถานะสำเร็จ/ล้มเหลว
+- ตัด logic ซ้ำซ้อนที่ทำให้ debug ยากและเกิดอาการเหมือนค้าง
 
-## Plan
+3. แยก upload QR ออกจากการบันทึกหลักให้ชัด
+- ถ้าอัปโหลดรูป: อัปโหลดเสร็จแล้วค่อยส่ง URL เข้า save
+- ถ้าไม่อัปโหลดรูป: ต้องบันทึกข้อมูลบัญชีได้ทันที
+- ทุกกรณีต้องแสดง error จริงบนหน้าจอ ไม่ปล่อยให้ปุ่มค้าง
 
-1. แยก logic ฝั่งเซิร์ฟเวอร์ออกจาก `src/lib/payment-settings.functions.ts`
-   - ย้าย `assertAdmin` และ logic ที่แตะ admin client ไปไว้ในไฟล์ใหม่ `src/lib/payment-settings.server.ts`
-   - ให้ไฟล์ `.functions.ts` เหลือเฉพาะ `createServerFn` แบบบาง ๆ ตาม pattern ที่ TanStack ต้องการ
+4. ทำ error handling ให้ตรงอาการ
+- แสดงข้อความผิดพลาดจาก backend แบบตรง ๆ
+- ปิด loading state ทุกทางออก
+- กัน timeout แล้วคืนสถานะให้ผู้ใช้กดใหม่ได้
 
-2. แก้ `savePaymentSettings` และ `uploadPaymentQr` ให้เรียก helper จากไฟล์ `.server.ts`
-   - ลดความเสี่ยงจาก server-function splitting/runtime resolution
-   - คง validation และสิทธิ์แอดมินเดิมไว้
+5. ทดสอบ flow ที่ผู้ใช้ใช้งานจริง
+- บันทึกโดยไม่อัปโหลดรูป
+- อัปโหลดรูปแล้วบันทึก
+- แก้ไขข้อมูลเดิมที่ active อยู่
+- ยืนยันว่ามี record ถูกสร้าง/อัปเดตจริงในฐานข้อมูล
 
-3. ปรับหน้า `src/routes/admin/payment-settings.tsx` ให้แสดง error ของการบันทึกชัดขึ้น
-   - กันสถานะ loading/saving ค้างเมื่อ server function fail
-   - แสดงข้อความผิดพลาดจาก save ให้ชัดเจนทันที
+## ผลลัพธ์ที่คาด
+- หน้าแอดมินบันทึกข้อมูลได้
+- ไม่เกิดอาการกดแล้วค้างเฉย ๆ
+- ถ้ามีปัญหา จะเห็นข้อความสาเหตุจริงทันที
 
-4. แก้ `src/styles.css` ให้ไม่มี Vite overlay รบกวนการทดสอบ
-   - เรียง `@import` / `@source` ให้ถูกลำดับ
+## รายละเอียดเชิงเทคนิค
+- สาเหตุที่น่าสงสัยที่สุดตอนนี้คือสิทธิ์ Data API ของ `payment_settings` และ `user_roles` ยังไม่ครบ ทำให้หน้าแอดมินที่ใช้ client session โดยตรงมีโอกาสอ่าน/เขียนไม่ผ่าน
+- โค้ดปัจจุบันมีการผสมหลายแนวทาง: client-side save + server-side upload + admin check หลายชั้น ทำให้ตามอาการยาก
+- แนวทางใหม่จะทำให้ save path เหลือเส้นเดียวและตรวจสิทธิ์แอดมินที่ backend ก่อนเขียนข้อมูล
 
-5. ตรวจซ้ำหลังแก้
-   - เปิด `/admin/payment-settings`
-   - กรอกข้อมูลโดยไม่อัปโหลดรูป แล้วกดบันทึก
-   - ทดสอบอัปโหลด QR แล้วกดบันทึกอีกครั้ง
-   - เช็ก logs ว่าไม่มี `Server function info not found` แล้ว และมีข้อมูลถูกสร้าง/อัปเดตใน `payment_settings`
-
-## Technical details
-
-ไฟล์ที่คาดว่าจะเปลี่ยน:
+## ไฟล์/ส่วนที่คาดว่าจะกระทบ
+- migration สำหรับ grant และตรวจ access rules
 - `src/lib/payment-settings.functions.ts`
-- `src/lib/payment-settings.server.ts` (ใหม่)
+- `src/lib/payment-settings.server.ts`
 - `src/routes/admin/payment-settings.tsx`
-- `src/styles.css`
-
-ผลลัพธ์ที่คาดหวัง:
-- ปุ่มบันทึกทำงานจริง
-- ไม่ค้างหลังอัปโหลด QR
-- ไม่มี 500 จาก save server function
-- ไม่มี Vite overlay มาบังหน้าแอดมิน
-
-<presentation-actions>
-<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
-</presentation-actions>
+- อาจเช็ก `src/hooks/use-admin.ts` เพิ่มเพื่อให้ role check ตรงกับสิทธิ์ฐานข้อมูล
