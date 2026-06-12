@@ -52,7 +52,8 @@ function StatusPage() {
       <SiteHeader />
       <main className="container mx-auto max-w-3xl px-4 py-10">
         <h1 className="text-2xl font-bold sm:text-3xl">ตรวจสอบสถานะการสมัคร</h1>
-        <p className="mt-1 text-sm text-muted-foreground">ค้นหาด้วยเบอร์โทรศัพท์, ชื่อ-นามสกุล หรือเลขสมาชิก</p>
+        <p className="mt-1 text-sm text-muted-foreground">ค้นหาด้วยเบอร์โทรศัพท์ที่ลงทะเบียน หรือเลขสมาชิก (ต้องตรงทั้งหมด)</p>
+
 
         <form
           onSubmit={(e) => { e.preventDefault(); search(query); }}
