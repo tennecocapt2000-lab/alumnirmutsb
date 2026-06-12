@@ -1,12 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
-import { uploadPaymentQr } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -43,7 +41,6 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
-  const uploadQrFn = useServerFn(uploadPaymentQr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -56,6 +53,7 @@ function PaymentSettingsPage() {
 
   useEffect(() => {
     if (admin.loading || !admin.isAdmin) return;
+    let active = true;
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -64,6 +62,7 @@ function PaymentSettingsPage() {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (!active) return;
       if (error) {
         console.error(error);
         toast.error("โหลดข้อมูลไม่สำเร็จ: " + error.message);
@@ -82,6 +81,7 @@ function PaymentSettingsPage() {
       }
       setLoading(false);
     })();
+    return () => { active = false; };
   }, [admin.loading, admin.isAdmin]);
 
   const update = <K extends keyof Settings>(k: K, v: Settings[K]) =>
@@ -98,32 +98,15 @@ function PaymentSettingsPage() {
     }
     setUploading(true);
     setLastError(null);
-    const timeout = setTimeout(() => {
-      setUploading((s) => {
-        if (s) toast.error("อัปโหลดช้าผิดปกติ ลองใหม่อีกครั้ง");
-        return false;
-      });
-    }, 30000);
     try {
-      const buf = await file.arrayBuffer();
-      let binary = "";
-      const bytes = new Uint8Array(buf);
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode.apply(
-          null,
-          Array.from(bytes.subarray(i, i + chunk)) as unknown as number[],
-        );
-      }
-
-      const res = await uploadQrFn({
-        data: {
-          filename: file.name,
-          contentType: file.type as "image/jpeg" | "image/png" | "image/webp",
-          base64: btoa(binary),
-        },
-      });
-      update("qr_code_url", res.url);
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `qr-${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("payment-qr")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("payment-qr").getPublicUrl(path);
+      update("qr_code_url", pub.publicUrl);
       toast.success("อัปโหลด QR Code สำเร็จ");
     } catch (e: any) {
       console.error("[payment-settings] upload error", e);
@@ -131,7 +114,6 @@ function PaymentSettingsPage() {
       setLastError("อัปโหลด QR ไม่สำเร็จ: " + message);
       toast.error("อัปโหลดไม่สำเร็จ: " + message);
     } finally {
-      clearTimeout(timeout);
       setUploading(false);
     }
   }
@@ -148,14 +130,10 @@ function PaymentSettingsPage() {
     }
     setLastError(null);
     setSaving(true);
-    const timeout = setTimeout(() => {
-      // safety net: never leave the button stuck
-      setSaving((s) => {
-        if (s) toast.error("เครือข่ายช้า ลองกดบันทึกอีกครั้ง");
-        return false;
-      });
-    }, 20000);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("กรุณาเข้าสู่ระบบใหม่");
+
       const payload = {
         bank_name: form.bank_name.trim(),
         account_name: form.account_name.trim(),
@@ -165,22 +143,18 @@ function PaymentSettingsPage() {
         payment_instruction: form.payment_instruction ?? "",
         show_qr_code: !!form.show_qr_code,
         is_active: !!form.is_active,
+        updated_by: user.id,
       };
 
+      // Enforce single active row before write to avoid unique-index conflict
       if (payload.is_active) {
-        let deactivateQuery = supabase
+        let q = supabase
           .from("payment_settings")
           .update({ is_active: false })
           .eq("is_active", true);
-
-        if (form.id) {
-          deactivateQuery = deactivateQuery.neq("id", form.id);
-        }
-
-        const { error: deactivateError } = await deactivateQuery;
-        if (deactivateError) {
-          throw deactivateError;
-        }
+        if (form.id) q = q.neq("id", form.id);
+        const { error: deErr } = await q;
+        if (deErr) throw deErr;
       }
 
       const { data: saved, error } = form.id
@@ -196,9 +170,7 @@ function PaymentSettingsPage() {
             .select("*")
             .single();
 
-      if (error || !saved) {
-        throw error ?? new Error("ไม่สามารถบันทึกข้อมูลได้");
-      }
+      if (error || !saved) throw error ?? new Error("ไม่สามารถบันทึกข้อมูลได้");
 
       setForm({
         id: saved.id,
@@ -214,14 +186,10 @@ function PaymentSettingsPage() {
       toast.success("บันทึกสำเร็จ");
     } catch (e: any) {
       console.error("[payment-settings] save error", e);
-      const msg =
-        e?.message ||
-        e?.error_description ||
-        (typeof e === "string" ? e : "ไม่ทราบสาเหตุ");
+      const msg = e?.message || e?.error_description || (typeof e === "string" ? e : "ไม่ทราบสาเหตุ");
       setLastError("บันทึกไม่สำเร็จ: " + msg);
       toast.error("บันทึกไม่สำเร็จ: " + msg);
     } finally {
-      clearTimeout(timeout);
       setSaving(false);
     }
   }
@@ -248,7 +216,6 @@ function PaymentSettingsPage() {
 
       <main className="container mx-auto max-w-6xl px-4 py-6">
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Form */}
           <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold">ข้อมูลบัญชีรับชำระเงิน</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -339,7 +306,6 @@ function PaymentSettingsPage() {
             )}
           </section>
 
-          {/* Preview */}
           <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold">ตัวอย่างที่ผู้สมัครจะเห็น</h2>
             <p className="mt-1 text-sm text-muted-foreground">Preview แบบเรียลไทม์</p>
