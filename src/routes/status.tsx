@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/site-header";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2 } from "lucide-react";
 import { statusBadgeClass, statusLabel } from "@/lib/status";
 import { Skeleton } from "@/components/ui/skeleton";
+import { lookupApplicationStatus, type StatusLookupRow } from "@/lib/status-lookup.functions";
 
 type SearchParams = { q?: string; id?: string };
 
@@ -17,31 +18,22 @@ export const Route = createFileRoute("/status")({
   component: StatusPage,
 });
 
-type AppRow = {
-  id: string; prefix: string; full_name: string; phone: string;
-  status: string; member_no: string | null; admin_note: string | null;
-  created_at: string; payment_date: string | null;
-};
+type AppRow = StatusLookupRow;
 
 function StatusPage() {
   const { q, id } = Route.useSearch();
   const [query, setQuery] = useState(q ?? "");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<AppRow[] | null>(null);
+  const lookup = useServerFn(lookupApplicationStatus);
 
   async function search(qStr: string) {
-    if (!qStr.trim()) return;
+    const term = qStr.trim();
+    if (term.length < 3) return;
     setLoading(true);
     try {
-      const term = qStr.trim();
-      const { data, error } = await supabase
-        .from("applications")
-        .select("id,prefix,full_name,phone,status,member_no,admin_note,created_at,payment_date")
-        .or(`phone.ilike.%${term}%,full_name.ilike.%${term}%,member_no.ilike.%${term}%`)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      setResults(data ?? []);
+      const rows = await lookup({ data: { term } });
+      setResults(rows ?? []);
     } catch (e) {
       console.error(e);
       setResults([]);
@@ -54,12 +46,14 @@ function StatusPage() {
     if (q) search(q);
   }, [q]);
 
+
   return (
     <div className="min-h-screen">
       <SiteHeader />
       <main className="container mx-auto max-w-3xl px-4 py-10">
         <h1 className="text-2xl font-bold sm:text-3xl">ตรวจสอบสถานะการสมัคร</h1>
-        <p className="mt-1 text-sm text-muted-foreground">ค้นหาด้วยเบอร์โทรศัพท์, ชื่อ-นามสกุล หรือเลขสมาชิก</p>
+        <p className="mt-1 text-sm text-muted-foreground">ค้นหาด้วยเบอร์โทรศัพท์ที่ลงทะเบียน หรือเลขสมาชิก (ต้องตรงทั้งหมด)</p>
+
 
         <form
           onSubmit={(e) => { e.preventDefault(); search(query); }}
