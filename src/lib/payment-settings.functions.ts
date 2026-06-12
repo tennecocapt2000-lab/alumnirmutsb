@@ -14,7 +14,14 @@ const paymentSettingsSchema = z.object({
   is_active: z.boolean(),
 });
 
-async function getAdminClient(userId: string) {
+const uploadQrSchema = z.object({
+  filename: z.string().min(1).max(200),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  // base64 (no data: prefix); ~2MB binary => ~2.8MB base64
+  base64: z.string().min(8).max(4_000_000),
+});
+
+async function assertAdmin(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("user_roles")
@@ -24,17 +31,49 @@ async function getAdminClient(userId: string) {
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("ไม่มีสิทธิ์บันทึกข้อมูลการชำระเงิน");
+    throw new Error("ไม่มีสิทธิ์ดำเนินการ");
   }
-
   return supabaseAdmin;
 }
+
+export const uploadPaymentQr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => uploadQrSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = await assertAdmin(context.userId);
+
+    const ext =
+      data.contentType === "image/jpeg"
+        ? "jpg"
+        : data.contentType === "image/webp"
+        ? "webp"
+        : "png";
+    const path = `qr-${crypto.randomUUID()}.${ext}`;
+
+    // decode base64 to Uint8Array (Worker-safe)
+    const binary = atob(data.base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    const { error: upErr } = await supabaseAdmin.storage
+      .from("payment-qr")
+      .upload(path, bytes, {
+        upsert: false,
+        contentType: data.contentType,
+      });
+    if (upErr) throw new Error(upErr.message);
+
+    const { data: pub } = supabaseAdmin.storage
+      .from("payment-qr")
+      .getPublicUrl(path);
+    return { url: pub.publicUrl, path };
+  });
 
 export const savePaymentSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => paymentSettingsSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await getAdminClient(context.userId);
+    const supabaseAdmin = await assertAdmin(context.userId);
 
     const payload = {
       bank_name: data.bank_name.trim(),

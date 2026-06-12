@@ -6,7 +6,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
-import { savePaymentSettings } from "@/lib/payment-settings.functions";
+import { savePaymentSettings, uploadPaymentQr } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -44,6 +44,7 @@ function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
   const saveFn = useServerFn(savePaymentSettings);
+  const uploadQrFn = useServerFn(uploadPaymentQr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -96,20 +97,40 @@ function PaymentSettingsPage() {
       return;
     }
     setUploading(true);
+    const timeout = setTimeout(() => {
+      setUploading((s) => {
+        if (s) toast.error("อัปโหลดช้าผิดปกติ ลองใหม่อีกครั้ง");
+        return false;
+      });
+    }, 30000);
     try {
-      const ext = file.name.split(".").pop() || "png";
-      const path = `qr-${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("payment-qr")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from("payment-qr").getPublicUrl(path);
-      update("qr_code_url", data.publicUrl);
+      // file -> base64 (no data: prefix) for server function
+      const buf = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(
+          null,
+          Array.from(bytes.subarray(i, i + chunk)) as unknown as number[],
+        );
+      }
+      const base64 = btoa(binary);
+
+      const res = await uploadQrFn({
+        data: {
+          filename: file.name,
+          contentType: file.type as "image/jpeg" | "image/png" | "image/webp",
+          base64,
+        },
+      });
+      update("qr_code_url", res.url);
       toast.success("อัปโหลด QR Code สำเร็จ");
     } catch (e: any) {
-      console.error(e);
-      toast.error("อัปโหลดไม่สำเร็จ: " + (e?.message || ""));
+      console.error("[payment-settings] upload error", e);
+      toast.error("อัปโหลดไม่สำเร็จ: " + (e?.message || "ไม่ทราบสาเหตุ"));
     } finally {
+      clearTimeout(timeout);
       setUploading(false);
     }
   }
@@ -269,7 +290,7 @@ function PaymentSettingsPage() {
 
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   onClick={save}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
