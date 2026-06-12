@@ -1,12 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
-import { savePaymentSettings } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -43,7 +41,6 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
-  const saveSettings = useServerFn(savePaymentSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -65,7 +62,7 @@ function PaymentSettingsPage() {
         .maybeSingle();
       if (error) {
         console.error(error);
-        toast.error("โหลดข้อมูลไม่สำเร็จ");
+        toast.error("โหลดข้อมูลไม่สำเร็จ: " + error.message);
       } else if (data) {
         setForm({
           id: data.id,
@@ -106,9 +103,9 @@ function PaymentSettingsPage() {
       const { data } = supabase.storage.from("payment-qr").getPublicUrl(path);
       update("qr_code_url", data.publicUrl);
       toast.success("อัปโหลด QR Code สำเร็จ");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("อัปโหลดไม่สำเร็จ");
+      toast.error("อัปโหลดไม่สำเร็จ: " + (e?.message || ""));
     } finally {
       setUploading(false);
     }
@@ -121,31 +118,51 @@ function PaymentSettingsPage() {
       return;
     }
     if (!Number.isFinite(form.application_fee) || form.application_fee <= 0) {
-      toast.error("กรุณาระบุจำนวนเงินค่าสมัครที่ถูกต้องที่");
+      toast.error("กรุณาระบุจำนวนเงินค่าสมัครที่ถูกต้อง");
       return;
     }
     setSaving(true);
-    const timeoutId = setTimeout(() => {
-      setSaving((s) => {
-        if (s) toast.error("หมดเวลาเชื่อมต่อ กรุณาลองใหม่");
-        return false;
-      });
-    }, 20000);
-
     try {
-      const saved = await saveSettings({
-        data: {
-          id: form.id,
-          bank_name: form.bank_name.trim(),
-          account_name: form.account_name.trim(),
-          account_number: form.account_number.trim(),
-          application_fee: form.application_fee,
-          qr_code_url: form.qr_code_url,
-          payment_instruction: form.payment_instruction,
-          show_qr_code: form.show_qr_code,
-          is_active: form.is_active,
-        },
-      });
+      const payload = {
+        bank_name: form.bank_name.trim(),
+        account_name: form.account_name.trim(),
+        account_number: form.account_number.trim(),
+        application_fee: form.application_fee,
+        qr_code_url: form.qr_code_url,
+        payment_instruction: form.payment_instruction,
+        show_qr_code: form.show_qr_code,
+        is_active: form.is_active,
+      };
+
+      if (form.is_active) {
+        let deactivate = supabase
+          .from("payment_settings")
+          .update({ is_active: false })
+          .eq("is_active", true);
+        if (form.id) deactivate = deactivate.neq("id", form.id);
+        const { error: deErr } = await deactivate;
+        if (deErr) throw deErr;
+      }
+
+      let saved: any;
+      if (form.id) {
+        const { data, error } = await supabase
+          .from("payment_settings")
+          .update(payload)
+          .eq("id", form.id)
+          .select("*")
+          .single();
+        if (error) throw error;
+        saved = data;
+      } else {
+        const { data, error } = await supabase
+          .from("payment_settings")
+          .insert(payload)
+          .select("*")
+          .single();
+        if (error) throw error;
+        saved = data;
+      }
 
       setForm({
         id: saved.id,
@@ -158,15 +175,11 @@ function PaymentSettingsPage() {
         show_qr_code: !!saved.show_qr_code,
         is_active: !!saved.is_active,
       });
-
-      clearTimeout(timeoutId);
       toast.success("บันทึกสำเร็จ");
     } catch (e: any) {
-      clearTimeout(timeoutId);
       console.error("[payment-settings] save error", e);
-      toast.error(e?.message || e?.error_description || "บันทึกไม่สำเร็จ");
+      toast.error("บันทึกไม่สำเร็จ: " + (e?.message || e?.error_description || "unknown"));
     } finally {
-      clearTimeout(timeoutId);
       setSaving(false);
     }
   }
