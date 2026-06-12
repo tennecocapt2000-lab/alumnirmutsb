@@ -1,12 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
-import { savePaymentSettings, uploadPaymentQr } from "@/lib/payment-settings.functions";
+import { uploadPaymentQr } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -43,13 +42,13 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
-  const saveFn = useServerFn(savePaymentSettings);
-  const uploadQrFn = useServerFn(uploadPaymentQr);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [form, setForm] = useState<Settings>(initial);
+
+  const uploadQrFn = uploadPaymentQr;
 
   useEffect(() => {
     if (!admin.loading && !admin.isAdmin) navigate({ to: "/admin/login" });
@@ -75,7 +74,7 @@ function PaymentSettingsPage() {
           account_name: data.account_name ?? "",
           account_number: data.account_number ?? "",
           application_fee: Number(data.application_fee ?? 200),
-          qr_code_url: data.qr_code_url ?? null,
+          qr_code_url: data.qr_code_url || null,
           payment_instruction: data.payment_instruction ?? "",
           show_qr_code: !!data.show_qr_code,
           is_active: !!data.is_active,
