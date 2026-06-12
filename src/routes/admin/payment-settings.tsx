@@ -48,6 +48,7 @@ function PaymentSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [form, setForm] = useState<Settings>(initial);
 
   useEffect(() => {
@@ -97,6 +98,7 @@ function PaymentSettingsPage() {
       return;
     }
     setUploading(true);
+    setLastError(null);
     const timeout = setTimeout(() => {
       setUploading((s) => {
         if (s) toast.error("อัปโหลดช้าผิดปกติ ลองใหม่อีกครั้ง");
@@ -128,7 +130,9 @@ function PaymentSettingsPage() {
       toast.success("อัปโหลด QR Code สำเร็จ");
     } catch (e: any) {
       console.error("[payment-settings] upload error", e);
-      toast.error("อัปโหลดไม่สำเร็จ: " + (e?.message || "ไม่ทราบสาเหตุ"));
+      const message = e?.message || "ไม่ทราบสาเหตุ";
+      setLastError("อัปโหลด QR ไม่สำเร็จ: " + message);
+      toast.error("อัปโหลดไม่สำเร็จ: " + message);
     } finally {
       clearTimeout(timeout);
       setUploading(false);
@@ -145,6 +149,7 @@ function PaymentSettingsPage() {
       toast.error("กรุณาระบุจำนวนเงินค่าสมัครที่ถูกต้อง");
       return;
     }
+    setLastError(null);
     setSaving(true);
     const timeout = setTimeout(() => {
       // safety net: never leave the button stuck
@@ -186,6 +191,7 @@ function PaymentSettingsPage() {
         e?.message ||
         e?.error_description ||
         (typeof e === "string" ? e : "ไม่ทราบสาเหตุ");
+      setLastError("บันทึกไม่สำเร็จ: " + msg);
       toast.error("บันทึกไม่สำเร็จ: " + msg);
     } finally {
       clearTimeout(timeout);
@@ -231,6 +237,11 @@ function PaymentSettingsPage() {
               </div>
             ) : (
               <div className="mt-5 space-y-4">
+                {lastError && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {lastError}
+                  </div>
+                )}
                 <Field label="ชื่อธนาคาร" required>
                   <input className={inputCls} value={form.bank_name} onChange={(e) => update("bank_name", e.target.value)} />
                 </Field>
