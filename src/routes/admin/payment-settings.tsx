@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload, ChevronLeft, QrCode, Save } from "lucide-react";
+import { savePaymentSettings } from "@/lib/payment-settings.functions";
 
 export const Route = createFileRoute("/admin/payment-settings")({
   head: () => ({ meta: [{ title: "ตั้งค่าการชำระเงิน — แอดมิน" }] }),
@@ -41,6 +43,7 @@ const inputCls =
 function PaymentSettingsPage() {
   const navigate = useNavigate();
   const admin = useAdmin();
+  const saveFn = useServerFn(savePaymentSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -122,47 +125,27 @@ function PaymentSettingsPage() {
       return;
     }
     setSaving(true);
+    const timeout = setTimeout(() => {
+      // safety net: never leave the button stuck
+      setSaving((s) => {
+        if (s) toast.error("เครือข่ายช้า ลองกดบันทึกอีกครั้ง");
+        return false;
+      });
+    }, 20000);
     try {
-      const payload = {
-        bank_name: form.bank_name.trim(),
-        account_name: form.account_name.trim(),
-        account_number: form.account_number.trim(),
-        application_fee: form.application_fee,
-        qr_code_url: form.qr_code_url,
-        payment_instruction: form.payment_instruction,
-        show_qr_code: form.show_qr_code,
-        is_active: form.is_active,
-      };
-
-      if (form.is_active) {
-        let deactivate = supabase
-          .from("payment_settings")
-          .update({ is_active: false })
-          .eq("is_active", true);
-        if (form.id) deactivate = deactivate.neq("id", form.id);
-        const { error: deErr } = await deactivate;
-        if (deErr) throw deErr;
-      }
-
-      let saved: any;
-      if (form.id) {
-        const { data, error } = await supabase
-          .from("payment_settings")
-          .update(payload)
-          .eq("id", form.id)
-          .select("*")
-          .single();
-        if (error) throw error;
-        saved = data;
-      } else {
-        const { data, error } = await supabase
-          .from("payment_settings")
-          .insert(payload)
-          .select("*")
-          .single();
-        if (error) throw error;
-        saved = data;
-      }
+      const saved = await saveFn({
+        data: {
+          id: form.id,
+          bank_name: form.bank_name.trim(),
+          account_name: form.account_name.trim(),
+          account_number: form.account_number.trim(),
+          application_fee: Number(form.application_fee),
+          qr_code_url: form.qr_code_url,
+          payment_instruction: form.payment_instruction ?? "",
+          show_qr_code: !!form.show_qr_code,
+          is_active: !!form.is_active,
+        },
+      });
 
       setForm({
         id: saved.id,
@@ -178,8 +161,13 @@ function PaymentSettingsPage() {
       toast.success("บันทึกสำเร็จ");
     } catch (e: any) {
       console.error("[payment-settings] save error", e);
-      toast.error("บันทึกไม่สำเร็จ: " + (e?.message || e?.error_description || "unknown"));
+      const msg =
+        e?.message ||
+        e?.error_description ||
+        (typeof e === "string" ? e : "ไม่ทราบสาเหตุ");
+      toast.error("บันทึกไม่สำเร็จ: " + msg);
     } finally {
+      clearTimeout(timeout);
       setSaving(false);
     }
   }
