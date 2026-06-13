@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { supabase } from "@/integrations/supabase/client";
 import { GraduationCap, Users, ShieldCheck, ArrowRight, Search } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -12,7 +14,26 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+type PaymentInfo = { bank_name: string; account_name: string; application_fee: number };
+
 function Home() {
+  const [pay, setPay] = useState<PaymentInfo | null>(null);
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("payment_settings")
+      .select("bank_name,account_name,application_fee")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (active && data) setPay(data as PaymentInfo); });
+    return () => { active = false; };
+  }, []);
+
+  const fee = Number(pay?.application_fee ?? 200);
+  const bank = pay?.bank_name || "ธนาคารออมสิน";
+  const accountName = pay?.account_name || "สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ";
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -55,13 +76,13 @@ function Home() {
                     <div className="shrink-0 rounded-md bg-primary/10 p-2 text-primary"><Users className="h-5 w-5" /></div>
                     <div className="min-w-0">
                       <div className="font-semibold">ค่าสมัครสมาชิก</div>
-                      <div className="text-sm text-muted-foreground">200 บาท (ครั้งเดียว)</div>
+                      <div className="text-sm text-muted-foreground">{fee.toLocaleString("th-TH")} บาท (ครั้งเดียว)</div>
                     </div>
                   </div>
                   <div className="rounded-lg border p-4">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">โอนเงินผ่าน</div>
-                    <div className="mt-1 font-semibold">ธนาคารออมสิน</div>
-                    <div className="text-sm text-muted-foreground">สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ</div>
+                    <div className="mt-1 font-semibold">{bank}</div>
+                    <div className="text-sm text-muted-foreground">{accountName}</div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center text-[11px] sm:text-xs">
                     {["กรอกข้อมูล", "แนบสลิป", "รอยืนยัน"].map((s, i) => (
