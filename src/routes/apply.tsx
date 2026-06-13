@@ -150,11 +150,16 @@ function ApplyPage() {
         <h1 className="text-2xl font-bold sm:text-3xl">แบบฟอร์มสมัครสมาชิก</h1>
         <p className="mt-1 text-sm text-muted-foreground">กรอกข้อมูลให้ครบถ้วนเพื่อสมัครเป็นสมาชิกสมาคม</p>
 
+        {/* Mobile step indicator */}
+        <p className="mt-4 text-sm font-medium text-primary sm:hidden">
+          ขั้นที่ {step + 1}/{steps.length}: {steps[step]}
+        </p>
+
         {/* Stepper */}
-        <ol className="mt-6 grid grid-cols-5 gap-2">
+        <ol className="mt-4 grid grid-cols-5 gap-2 sm:mt-6">
           {steps.map((s, i) => (
             <li key={s} className="flex flex-col items-center text-center">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold ${i < step ? "bg-success text-success-foreground" : i === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold sm:h-9 sm:w-9 ${i < step ? "bg-success text-success-foreground" : i === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                 {i < step ? <Check className="h-4 w-4" /> : i + 1}
               </div>
               <span className={`mt-1 hidden text-xs sm:block ${i === step ? "font-medium text-foreground" : "text-muted-foreground"}`}>{s}</span>
@@ -162,7 +167,7 @@ function ApplyPage() {
           ))}
         </ol>
 
-        <div className="mt-6 rounded-xl border bg-card p-5 shadow-sm sm:p-7">
+        <div className="mt-6 rounded-xl border bg-card p-4 shadow-sm sm:p-7">
           {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="คำนำหน้า" required>
@@ -268,13 +273,13 @@ function ApplyPage() {
                     {payment.application_fee.toLocaleString("th-TH")} บาท
                   </div>
                   <div className="mt-3 space-y-1 text-sm">
-                    <div><span className="text-muted-foreground">ธนาคาร: </span><span className="font-medium">{payment.bank_name}</span></div>
-                    <div><span className="text-muted-foreground">ชื่อบัญชี: </span><span className="font-medium">{payment.account_name}</span></div>
-                    <div><span className="text-muted-foreground">เลขที่บัญชี: </span><span className="font-medium">{payment.account_number}</span></div>
+                    <div><span className="text-muted-foreground">ธนาคาร: </span><span className="font-medium break-words">{payment.bank_name}</span></div>
+                    <div><span className="text-muted-foreground">ชื่อบัญชี: </span><span className="font-medium break-words">{payment.account_name}</span></div>
+                    <div><span className="text-muted-foreground">เลขที่บัญชี: </span><span className="font-medium break-all font-mono">{payment.account_number}</span></div>
                   </div>
                   {payment.show_qr_code && payment.qr_code_url && (
                     <div className="mt-4 flex flex-col items-center gap-2">
-                      <img src={payment.qr_code_url} alt="QR Code" loading="lazy" className="h-48 w-48 rounded-md border bg-white object-contain p-2" />
+                      <img src={payment.qr_code_url} alt="QR Code" loading="lazy" className="h-48 w-48 max-w-full rounded-md border bg-white object-contain p-2" />
                       <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <QrCode className="h-3 w-3" /> สแกนเพื่อชำระเงิน
                       </div>
@@ -323,20 +328,20 @@ function ApplyPage() {
             </div>
           )}
 
-          <div className="mt-7 flex items-center justify-between gap-3 border-t pt-5">
+          <div className="mt-7 flex items-center justify-between gap-2 border-t pt-5">
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="inline-flex items-center gap-1 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-40 sm:px-4"
             >
-              <ChevronLeft className="h-4 w-4" /> ย้อนกลับ
+              <ChevronLeft className="h-4 w-4" /> <span className="hidden sm:inline">ย้อนกลับ</span>
             </button>
             {step < steps.length - 1 ? (
               <button
                 type="button"
                 onClick={() => canNext() ? setStep((s) => s + 1) : toast.error("กรุณากรอกข้อมูลที่จำเป็น")}
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:px-5"
               >
                 ถัดไป <ChevronRight className="h-4 w-4" />
               </button>
@@ -345,10 +350,10 @@ function ApplyPage() {
                 type="button"
                 disabled={submitting}
                 onClick={submit}
-                className="inline-flex items-center gap-2 rounded-md bg-success px-6 py-2 text-sm font-medium text-success-foreground hover:bg-success/90 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success/90 disabled:opacity-60 sm:px-6"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {submitting ? "กำลังส่งใบสมัคร..." : "ส่งใบสมัคร"}
+                {submitting ? "กำลังส่ง..." : "ส่งใบสมัคร"}
               </button>
             )}
           </div>
@@ -363,9 +368,9 @@ function ApplyPage() {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-md border bg-background px-3 py-2">
-      <dt className="text-muted-foreground">{k}</dt>
-      <dd className="text-right font-medium">{v}</dd>
+    <div className="flex flex-col gap-1 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      <dt className="shrink-0 text-xs text-muted-foreground sm:text-sm">{k}</dt>
+      <dd className="break-all text-sm font-medium sm:text-right">{v}</dd>
     </div>
   );
 }
