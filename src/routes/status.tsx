@@ -60,14 +60,14 @@ function StatusPage() {
           className="mt-5 flex gap-2"
         >
           <input
-            className="flex-1 rounded-md border border-input bg-background px-3 py-2.5 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            placeholder="เช่น 081-234-5678 หรือ สมชาย ใจดี"
+            className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2.5 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            placeholder="เบอร์โทร หรือ ชื่อ"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             disabled={loading}
           />
-          <button disabled={loading} className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} {loading ? "กำลังค้นหา..." : "ค้นหา"}
+          <button disabled={loading} className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 sm:px-5">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} ค้นหา
           </button>
         </form>
 
@@ -91,16 +91,16 @@ function StatusPage() {
             </div>
           )}
           {!loading && results && results.map((r) => (
-            <div key={r.id} className={`rounded-xl border bg-card p-5 shadow-sm transition ${r.id === id ? "ring-2 ring-primary" : ""}`}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="text-lg font-semibold">{r.prefix} {r.full_name}</div>
-                  <div className="text-sm text-muted-foreground">โทร. {r.phone}</div>
+            <div key={r.id} className={`rounded-xl border bg-card p-4 shadow-sm transition sm:p-5 ${r.id === id ? "ring-2 ring-primary" : ""}`}>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-base font-semibold sm:text-lg">{r.prefix} {r.full_name}</div>
+                  <div className="truncate text-sm text-muted-foreground">โทร. {r.phone}</div>
                   {r.member_no && (
-                    <div className="mt-1 text-sm">เลขสมาชิก: <span className="font-mono font-semibold text-primary">{r.member_no}</span></div>
+                    <div className="mt-1 truncate text-sm">เลขสมาชิก: <span className="font-mono font-semibold text-primary">{r.member_no}</span></div>
                   )}
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusBadgeClass(r.status)}`}>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-xs ${statusBadgeClass(r.status)}`}>
                   {statusLabel(r.status)}
                 </span>
               </div>
