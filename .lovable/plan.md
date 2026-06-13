@@ -1,40 +1,29 @@
-## เป้าหมาย
-ปรับแถบเมนูบนมือถือให้แสดงครบทุกคำ (ไม่ย่อ/ไม่ซ่อน) และดูเรียบร้อย professional
+## ปัญหา
 
-## ขอบเขต
-แก้เฉพาะ `src/components/site-header.tsx` ไม่แตะ logic อื่น
+หน้า `/apply` โหลดข้อมูลจากตาราง `payment_settings` ผ่าน Supabase client (anon key) แต่ตารางนี้ **ไม่มี GRANT** ให้ role `anon` / `authenticated` — มีแค่ RLS policy เท่านั้น
 
-## รายละเอียด
+ผลคือทุก request ถูกปฏิเสธก่อนถึง RLS → `data` กลับมาเป็น `null` → หน้าสมัครไม่แสดงบัญชี/QR ที่ตั้งค่าไว้
 
-### ปัญหาปัจจุบัน
-- active state เป็น pill สีเทา (`bg-accent`) ดูหนา/แปลกบนจอเล็ก
-- คำ "ตรวจสอบสถานะ" / "สมัครสมาชิก" ยาว ทำให้ชิดกันเกินไป
-- padding ของลิงก์และปุ่ม CTA ใหญ่เกินความจำเป็น
+ตรวจสอบจาก DB:
+- Policy "Anyone can read active payment settings" มีอยู่ ✅
+- `information_schema.role_table_grants` ไม่มี anon/authenticated ❌
 
-### การแก้ไข
+## แก้ไข
 
-1. **แสดงคำเต็มทุกคำ** บนมือถือ (<sm)
-   - "หน้าแรก" / "ตรวจสอบสถานะ" / "สมัครสมาชิก" แสดงครบ ไม่ย่อเป็น "สถานะ" หรือ "สมัคร"
+สร้าง migration เดียวเพื่อเพิ่ม grants:
 
-2. **ปรับ active state บนมือถือ**
-   - จาก pill background (`bg-accent`) เปลี่ยนเป็น **text-primary + underline** (ไม่มีพื้นหลัง)
-   - บน desktop (≥sm) คง active pill ไว้เหมือนเดิม
+```sql
+GRANT SELECT ON public.payment_settings TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.payment_settings TO authenticated;
+GRANT ALL ON public.payment_settings TO service_role;
+```
 
-3. **ลดขนาดและระยะห่างบนมือถือ**
-   - font nav ลงเป็น `text-xs`
-   - padding ลิงก์ลดเป็น `px-1.5 py-1`
-   - ปุ่ม CTA "สมัครสมาชิก" ลดเป็น `px-2 py-1.5 text-xs`
-   - gap ระหว่างลิงก์ลดเป็น `gap-0.5`
+- `anon` + `authenticated` SELECT → ให้หน้าสมัคร (ทั้งคนล็อกอินและไม่ล็อกอิน) อ่าน active row ได้ ตาม policy ที่มีอยู่
+- `authenticated` INSERT/UPDATE/DELETE → ให้หน้าแอดมินบันทึก/แก้ไขได้ (RLS จะกรองเฉพาะ admin ผ่าน `has_role`)
+- `service_role` ALL → สำหรับ server function
 
-4. **ปรับ logo บนมือถือ**
-   - ข้อความ truncate เป็น "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ" แต่ลด font size เล็กน้อยเพื่อให้พอดี
-   - ถ้ายังไม่พอใช้ `text-[11px]` พร้อม truncate
+## ไฟล์ที่แก้
 
-5. **ป้องกัน overflow**
-   - ใช้ `grid-cols-[minmax(0,1fr)_auto]` สำหรับ logo + nav container
-   - `min-w-0` กับ text container ทุกตัว
-   - `shrink-0` กับไอคอน/ปุ่ม
+- สร้างไฟล์ migration ใหม่ใน `supabase/migrations/`
 
-## ไม่แตะ
-- ไม่แตะ desktop layout (≥sm)
-- ไม่แตะ business logic, server functions, database
+ไม่แตะ frontend, ไม่แตะ logic อื่น
