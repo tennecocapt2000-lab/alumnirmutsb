@@ -5,10 +5,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
       <div className="container mx-auto flex h-14 items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-4">
-        <Link to="/" className="flex shrink-0 items-center gap-1.5 font-semibold text-primary sm:gap-2">
-          <GraduationCap className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
+        <Link to="/" aria-label="หน้าแรก" className="flex shrink-0 items-center gap-2 font-semibold text-primary">
+          <GraduationCap className="h-6 w-6 shrink-0" />
           <span className="hidden truncate sm:inline">สมาคมศิษย์เก่า มทร.สุวรรณภูมิ</span>
-          <span className="truncate text-sm sm:hidden">ศิษย์เก่า มทร.สุวรรณภูมิ</span>
         </Link>
         <nav className="ml-auto flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[13px] sm:gap-1 sm:text-sm">
           <Link
