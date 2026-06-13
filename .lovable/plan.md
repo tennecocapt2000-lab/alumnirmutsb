@@ -1,29 +1,19 @@
-## ปัญหา
+## เป้าหมาย
+ให้กล่อง "โอนเงินผ่าน..." บนหน้าแรกดึงข้อมูลจริงจากการตั้งค่าของแอดมิน เพื่อให้แอดมินแก้ไขได้โดยไม่ต้องแก้โค้ด
 
-หน้า `/apply` โหลดข้อมูลจากตาราง `payment_settings` ผ่าน Supabase client (anon key) แต่ตารางนี้ **ไม่มี GRANT** ให้ role `anon` / `authenticated` — มีแค่ RLS policy เท่านั้น
+## ข้อมูลที่จะแสดงบนหน้าแรก (ดึงจากตาราง payment_settings ที่ is_active = true)
+- ค่าสมัครสมาชิก → `application_fee` (ปัจจุบัน hardcode "200 บาท")
+- ชื่อธนาคาร → `bank_name` (ปัจจุบัน hardcode "ธนาคารออมสิน")
+- ชื่อบัญชี → `account_name` (ปัจจุบัน hardcode ชื่อสมาคม)
 
-ผลคือทุก request ถูกปฏิเสธก่อนถึง RLS → `data` กลับมาเป็น `null` → หน้าสมัครไม่แสดงบัญชี/QR ที่ตั้งค่าไว้
+## สิ่งที่จะทำ
+1. แก้ `src/routes/index.tsx`:
+   - เพิ่ม query โหลด payment_settings ที่ active ผ่าน supabase client (anon) — ใช้ policy ที่มีอยู่แล้ว
+   - แทนค่า "200 บาท", "ธนาคารออมสิน", และชื่อบัญชี ด้วยข้อมูลจริง
+   - มี fallback เป็นค่าเดิมระหว่างที่ยังโหลดไม่เสร็จ หรือกรณีไม่มีข้อมูล
+2. ไม่ต้องเพิ่มหน้าตั้งค่าใหม่ — ใช้หน้า `/admin/payment-settings` เดิม (แอดมินแก้ที่นั่นแล้วหน้าแรกเปลี่ยนตาม)
 
-ตรวจสอบจาก DB:
-- Policy "Anyone can read active payment settings" มีอยู่ ✅
-- `information_schema.role_table_grants` ไม่มี anon/authenticated ❌
-
-## แก้ไข
-
-สร้าง migration เดียวเพื่อเพิ่ม grants:
-
-```sql
-GRANT SELECT ON public.payment_settings TO anon, authenticated;
-GRANT INSERT, UPDATE, DELETE ON public.payment_settings TO authenticated;
-GRANT ALL ON public.payment_settings TO service_role;
-```
-
-- `anon` + `authenticated` SELECT → ให้หน้าสมัคร (ทั้งคนล็อกอินและไม่ล็อกอิน) อ่าน active row ได้ ตาม policy ที่มีอยู่
-- `authenticated` INSERT/UPDATE/DELETE → ให้หน้าแอดมินบันทึก/แก้ไขได้ (RLS จะกรองเฉพาะ admin ผ่าน `has_role`)
-- `service_role` ALL → สำหรับ server function
-
-## ไฟล์ที่แก้
-
-- สร้างไฟล์ migration ใหม่ใน `supabase/migrations/`
-
-ไม่แตะ frontend, ไม่แตะ logic อื่น
+## สิ่งที่จะ "ไม่" ทำ
+- ไม่แตะ schema ฐานข้อมูล (ตาราง/คอลัมน์/นโยบายมีพร้อมแล้ว)
+- ไม่เปลี่ยน layout/ดีไซน์การ์ดหน้าแรก
+- ไม่เพิ่มฟิลด์ใหม่ในหน้า admin
