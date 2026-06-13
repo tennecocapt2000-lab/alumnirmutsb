@@ -15,9 +15,11 @@ export const Route = createFileRoute("/")({
 });
 
 type PaymentInfo = { bank_name: string; account_name: string; application_fee: number };
+type SiteInfo = { hero_badge: string; hero_title_line1: string; hero_title_line2: string };
 
 function Home() {
   const [pay, setPay] = useState<PaymentInfo | null>(null);
+  const [site, setSite] = useState<SiteInfo | null>(null);
   useEffect(() => {
     let active = true;
     supabase
@@ -28,12 +30,22 @@ function Home() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => { if (active && data) setPay(data as PaymentInfo); });
+    supabase
+      .from("site_settings")
+      .select("hero_badge,hero_title_line1,hero_title_line2")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (active && data) setSite(data as SiteInfo); });
     return () => { active = false; };
   }, []);
 
   const fee = Number(pay?.application_fee ?? 200);
   const bank = pay?.bank_name || "ธนาคารออมสิน";
   const accountName = pay?.account_name || "สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ";
+  const heroBadge = site?.hero_badge || "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ";
+  const heroLine1 = site?.hero_title_line1 || "ลงทะเบียนสมาชิก";
+  const heroLine2 = site?.hero_title_line2 || "ออนไลน์ ง่าย รวดเร็ว";
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -43,12 +55,12 @@ function Home() {
             <div>
               <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground sm:gap-2 sm:px-3 sm:text-xs">
                 <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">สมาคมศิษย์เก่า มทร.สุวรรณภูมิ</span>
+                <span className="truncate">{heroBadge}</span>
               </span>
               <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                ลงทะเบียนสมาชิก
+                {heroLine1}
                 <br />
-                <span className="text-primary">ออนไลน์ ง่าย รวดเร็ว</span>
+                <span className="text-primary">{heroLine2}</span>
               </h1>
               <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:mt-5 sm:text-base lg:text-lg">
                 สมัครสมาชิกสมาคมศิษย์เก่า กรอกข้อมูล แนบสลิปโอนเงิน
