@@ -1,26 +1,25 @@
-## เป้าหมาย
-เพิ่มเมนู "ตั้งค่าหน้าแรก" ในแอดมิน เพื่อให้แอดมินแก้ Hero ของหน้าแรกได้แก่:
-- ป้าย/Badge ด้านบน Hero (ปัจจุบัน: "สมาคมศิษย์เก่า มทร.สุวรรณภูมิ")
-- หัวข้อใหญ่บรรทัดบน (ปัจจุบัน: "ลงทะเบียนสมาชิก")
-- หัวข้อใหญ่บรรทัดล่าง — สี primary (ปัจจุบัน: "ออนไลน์ ง่าย รวดเร็ว")
+# แก้บั๊ก: QR Code ไม่แสดงบน Android ในหน้า "สมัครสมาชิก"
 
-## งานที่จะทำ
+## อาการ
+- หน้า `/apply` ขั้นตอนที่ 4 (ชำระเงิน) บน iOS แสดง QR ปกติ
+- บน Android (Chrome) QR ไม่ขึ้น ทั้งที่ตั้งค่า "แสดง QR Code" ไว้แล้ว และไฟล์ภาพเข้าถึงได้ปกติ (ตรวจสอบแล้ว: HTTP 200, image/jpeg, 77KB)
 
-### 1) ฐานข้อมูล (migration)
-สร้างตาราง `public.site_settings` แบบ key/value ง่ายๆ ใช้ singleton row:
-- คอลัมน์ domain: `hero_badge`, `hero_title_line1`, `hero_title_line2`
-- RLS: ทุกคน (anon + authenticated) อ่านได้ / เฉพาะ admin (`has_role`) แก้ได้
-- GRANT: anon SELECT, authenticated SELECT/UPDATE/INSERT, service_role ALL
-- Seed แถวเริ่มต้นด้วยข้อความปัจจุบัน
+## สาเหตุที่น่าจะเป็น
+ใน `src/routes/apply.tsx` แท็ก `<img>` ของ QR ใช้ `loading="lazy"` และอยู่ในเนื้อหา step 3 ที่เพิ่งถูก render เมื่อผู้ใช้กดมาถึง — Android Chrome หลายเวอร์ชันมีบั๊กที่ lazy image ใน subtree ที่เพิ่งถูก mount ไม่ trigger การโหลด (iOS Safari ไม่มีปัญหานี้) นอกจากนี้ยังไม่มี `onError` / fallback ทำให้ถ้าโหลดพลาดก็เงียบไปเฉยๆ
 
-### 2) หน้าแอดมินใหม่
-- `src/routes/admin/homepage-settings.tsx` — ฟอร์ม 3 ฟิลด์ + ปุ่มบันทึก (รูปแบบเดียวกับ `payment-settings`)
-- เพิ่มการ์ดลิงก์ "ตั้งค่าหน้าแรก" ในหน้า `/admin` (dashboard)
+## สิ่งที่จะทำ (เฉพาะ frontend)
 
-### 3) หน้าแรก
-- ใน `src/routes/index.tsx` โหลด `site_settings` ผ่าน supabase client (เหมือนที่ทำกับ payment_settings)
-- แทนข้อความ badge / title 2 บรรทัด ด้วยค่าจาก DB (มี fallback เป็นข้อความปัจจุบัน)
+แก้ไขไฟล์เดียว: `src/routes/apply.tsx` ส่วนกล่อง QR
 
-## สิ่งที่จะ "ไม่" ทำ
-- ไม่แก้ subtitle / 3 ขั้นตอน / features (ผู้ใช้เลือกเฉพาะ badge + title)
-- ไม่เปลี่ยน layout, สี, หรือดีไซน์ของหน้าแรก
+1. เปลี่ยน `loading="lazy"` → `loading="eager"` และเพิ่ม `decoding="async"`
+2. เพิ่ม `onError` handler — ถ้าโหลดภาพไม่สำเร็จ แสดงข้อความ + ปุ่มเปิดลิงก์รูปในแท็บใหม่ + ลิงก์ดาวน์โหลด เพื่อให้ผู้ใช้ Android ที่ยังเจอปัญหายังชำระเงินได้
+3. เพิ่ม `referrerPolicy="no-referrer"` (กัน edge case บางเครือข่ายบล็อก)
+4. แสดง state "กำลังโหลด QR…" ระหว่างรอภาพ
+
+## สิ่งที่จะไม่ทำ
+- ไม่แก้ฐานข้อมูล / ไม่แก้หน้า admin / ไม่แก้ payment-settings
+- ไม่เปลี่ยนดีไซน์/สีของกล่องชำระเงิน
+- ไม่แตะหน้าอื่นที่ใช้ภาพ QR (ถ้ามี)
+
+## วิธียืนยันว่าหาย
+หลังแก้ ให้ผู้ใช้รีเฟรชหน้า `/apply` บน Android Chrome → กด "ถัดไป" จนถึงขั้นชำระเงิน → QR ต้องขึ้น (ถ้าโหลดพลาดจริง ก็จะเห็นปุ่มเปิดลิงก์รูปแทน ไม่ใช่ช่องว่าง)

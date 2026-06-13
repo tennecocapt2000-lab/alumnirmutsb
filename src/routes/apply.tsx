@@ -278,12 +278,7 @@ function ApplyPage() {
                     <div><span className="text-muted-foreground">เลขที่บัญชี: </span><span className="font-medium break-all font-mono">{payment.account_number}</span></div>
                   </div>
                   {payment.show_qr_code && payment.qr_code_url && (
-                    <div className="mt-4 flex flex-col items-center gap-2">
-                      <img src={payment.qr_code_url} alt="QR Code" loading="lazy" className="h-48 w-48 max-w-full rounded-md border bg-white object-contain p-2" />
-                      <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <QrCode className="h-3 w-3" /> สแกนเพื่อชำระเงิน
-                      </div>
-                    </div>
+                    <QrImage url={payment.qr_code_url} />
                   )}
                   {payment.payment_instruction && (
                     <p className="mt-4 rounded-md bg-background/60 p-3 text-sm text-muted-foreground">
@@ -371,6 +366,52 @@ function Row({ k, v }: { k: string; v: string }) {
     <div className="flex flex-col gap-1 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       <dt className="shrink-0 text-xs text-muted-foreground sm:text-sm">{k}</dt>
       <dd className="break-all text-sm font-medium sm:text-right">{v}</dd>
+    </div>
+  );
+}
+
+function QrImage({ url }: { url: string }) {
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  // cache-bust + force fresh request so Android Chrome doesn't skip the load
+  // when the parent subtree was just mounted
+  const src = url + (url.includes("?") ? "&" : "?") + "v=1";
+  return (
+    <div className="mt-4 flex flex-col items-center gap-2">
+      <div className="relative flex h-48 w-48 max-w-full items-center justify-center rounded-md border bg-white p-2">
+        {status === "loading" && (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" /> กำลังโหลด QR…
+          </div>
+        )}
+        {status !== "error" ? (
+          <img
+            src={src}
+            alt="QR Code สำหรับชำระเงิน"
+            loading="eager"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onLoad={() => setStatus("ok")}
+            onError={() => setStatus("error")}
+            className="h-full w-full object-contain"
+            style={{ opacity: status === "ok" ? 1 : 0 }}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-center text-xs text-muted-foreground">
+            <span>โหลดภาพ QR ไม่สำเร็จ</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md border bg-background px-2 py-1 text-primary underline"
+            >
+              เปิดรูป QR
+            </a>
+          </div>
+        )}
+      </div>
+      <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <QrCode className="h-3 w-3" /> สแกนเพื่อชำระเงิน
+      </div>
     </div>
   );
 }
