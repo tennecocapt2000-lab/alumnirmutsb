@@ -277,8 +277,16 @@ function ApplyPage() {
                   <Skeleton className="mt-4 h-40 w-40" />
                 </div>
               ) : paymentError || !payment ? (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
-                  ยังไม่ได้ตั้งค่าข้อมูลการชำระเงิน กรุณาติดต่อแอดมิน
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm">
+                  <p className="text-destructive">โหลดข้อมูลการชำระเงินไม่สำเร็จ อาจเกิดจากเครือข่ายไม่เสถียร</p>
+                  <button
+                    type="button"
+                    onClick={loadPayment}
+                    className="mt-3 inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-background px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"
+                  >
+                    ลองใหม่อีกครั้ง
+                  </button>
+                  <p className="mt-3 text-xs text-muted-foreground">คุณยังสามารถแนบสลิปและส่งใบสมัครได้ตามปกติ</p>
                 </div>
               ) : (
                 <div className="rounded-lg border bg-accent/30 p-5">
