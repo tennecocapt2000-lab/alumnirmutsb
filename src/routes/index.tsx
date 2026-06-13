@@ -84,9 +84,6 @@ function Home() {
                     <div className="mt-1 font-semibold">{bank}</div>
                     <div className="text-sm text-muted-foreground">{accountName}</div>
                   </div>
-                    <div className="mt-1 font-semibold">ธนาคารออมสิน</div>
-                    <div className="text-sm text-muted-foreground">สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ</div>
-                  </div>
                   <div className="grid grid-cols-3 gap-2 text-center text-[11px] sm:text-xs">
                     {["กรอกข้อมูล", "แนบสลิป", "รอยืนยัน"].map((s, i) => (
                       <div key={s} className="rounded-lg border bg-background p-2 sm:p-3">
