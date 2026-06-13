@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { supabase } from "@/integrations/supabase/client";
 import { GraduationCap, Users, ShieldCheck, ArrowRight, Search } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -12,7 +14,26 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+type PaymentInfo = { bank_name: string; account_name: string; application_fee: number };
+
 function Home() {
+  const [pay, setPay] = useState<PaymentInfo | null>(null);
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("payment_settings")
+      .select("bank_name,account_name,application_fee")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (active && data) setPay(data as PaymentInfo); });
+    return () => { active = false; };
+  }, []);
+
+  const fee = Number(pay?.application_fee ?? 200);
+  const bank = pay?.bank_name || "ธนาคารออมสิน";
+  const accountName = pay?.account_name || "สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ";
   return (
     <div className="min-h-screen">
       <SiteHeader />
