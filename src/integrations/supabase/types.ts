@@ -200,6 +200,36 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          hero_badge: string
+          hero_title_line1: string
+          hero_title_line2: string
+          id: string
+          is_singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          hero_badge?: string
+          hero_title_line1?: string
+          hero_title_line2?: string
+          id?: string
+          is_singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          hero_badge?: string
+          hero_title_line1?: string
+          hero_title_line2?: string
+          id?: string
+          is_singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
