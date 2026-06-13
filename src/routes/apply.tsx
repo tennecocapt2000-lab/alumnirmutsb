@@ -369,3 +369,49 @@ function Row({ k, v }: { k: string; v: string }) {
     </div>
   );
 }
+
+function QrImage({ url }: { url: string }) {
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  // cache-bust + force fresh request so Android Chrome doesn't skip the load
+  // when the parent subtree was just mounted
+  const src = url + (url.includes("?") ? "&" : "?") + "v=1";
+  return (
+    <div className="mt-4 flex flex-col items-center gap-2">
+      <div className="relative flex h-48 w-48 max-w-full items-center justify-center rounded-md border bg-white p-2">
+        {status === "loading" && (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" /> กำลังโหลด QR…
+          </div>
+        )}
+        {status !== "error" ? (
+          <img
+            src={src}
+            alt="QR Code สำหรับชำระเงิน"
+            loading="eager"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onLoad={() => setStatus("ok")}
+            onError={() => setStatus("error")}
+            className="h-full w-full object-contain"
+            style={{ opacity: status === "ok" ? 1 : 0 }}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-center text-xs text-muted-foreground">
+            <span>โหลดภาพ QR ไม่สำเร็จ</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md border bg-background px-2 py-1 text-primary underline"
+            >
+              เปิดรูป QR
+            </a>
+          </div>
+        )}
+      </div>
+      <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <QrCode className="h-3 w-3" /> สแกนเพื่อชำระเงิน
+      </div>
+    </div>
+  );
+}
