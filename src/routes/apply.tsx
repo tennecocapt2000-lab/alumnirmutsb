@@ -71,17 +71,21 @@ function ApplyPage() {
   const [paymentLoading, setPaymentLoading] = useState(true);
   const [paymentError, setPaymentError] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      setPaymentLoading(true);
-      const { data, error } = await supabase
-        .from("payment_settings")
-        .select("bank_name,account_name,account_number,application_fee,qr_code_url,payment_instruction,show_qr_code")
-        .eq("is_active", true)
-        .maybeSingle();
-      if (error || !data) {
-        setPaymentError(true);
-      } else {
+  const loadPayment = async () => {
+    setPaymentLoading(true);
+    setPaymentError(false);
+    const delays = [0, 800, 1600];
+    let lastErr: unknown = null;
+    for (let i = 0; i < delays.length; i++) {
+      if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
+      try {
+        const { data, error } = await supabase
+          .from("payment_settings")
+          .select("bank_name,account_name,account_number,application_fee,qr_code_url,payment_instruction,show_qr_code")
+          .eq("is_active", true)
+          .maybeSingle();
+        if (error) { lastErr = error; continue; }
+        if (!data) { lastErr = new Error("no active payment_settings row"); break; }
         setPayment({
           bank_name: data.bank_name,
           account_name: data.account_name,
@@ -91,9 +95,19 @@ function ApplyPage() {
           payment_instruction: data.payment_instruction,
           show_qr_code: !!data.show_qr_code,
         });
+        setPaymentLoading(false);
+        return;
+      } catch (e) {
+        lastErr = e;
       }
-      setPaymentLoading(false);
-    })();
+    }
+    console.error("[apply] failed to load payment_settings", lastErr);
+    setPaymentError(true);
+    setPaymentLoading(false);
+  };
+
+  useEffect(() => {
+    loadPayment();
   }, []);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((s) => ({ ...s, [k]: v }));
@@ -263,8 +277,16 @@ function ApplyPage() {
                   <Skeleton className="mt-4 h-40 w-40" />
                 </div>
               ) : paymentError || !payment ? (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
-                  ยังไม่ได้ตั้งค่าข้อมูลการชำระเงิน กรุณาติดต่อแอดมิน
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm">
+                  <p className="text-destructive">โหลดข้อมูลการชำระเงินไม่สำเร็จ อาจเกิดจากเครือข่ายไม่เสถียร</p>
+                  <button
+                    type="button"
+                    onClick={loadPayment}
+                    className="mt-3 inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-background px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"
+                  >
+                    ลองใหม่อีกครั้ง
+                  </button>
+                  <p className="mt-3 text-xs text-muted-foreground">คุณยังสามารถแนบสลิปและส่งใบสมัครได้ตามปกติ</p>
                 </div>
               ) : (
                 <div className="rounded-lg border bg-accent/30 p-5">
