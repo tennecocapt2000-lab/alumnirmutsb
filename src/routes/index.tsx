@@ -76,11 +76,14 @@ function Home() {
                     <div className="shrink-0 rounded-md bg-primary/10 p-2 text-primary"><Users className="h-5 w-5" /></div>
                     <div className="min-w-0">
                       <div className="font-semibold">ค่าสมัครสมาชิก</div>
-                      <div className="text-sm text-muted-foreground">200 บาท (ครั้งเดียว)</div>
+                      <div className="text-sm text-muted-foreground">{fee.toLocaleString("th-TH")} บาท (ครั้งเดียว)</div>
                     </div>
                   </div>
                   <div className="rounded-lg border p-4">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">โอนเงินผ่าน</div>
+                    <div className="mt-1 font-semibold">{bank}</div>
+                    <div className="text-sm text-muted-foreground">{accountName}</div>
+                  </div>
                     <div className="mt-1 font-semibold">ธนาคารออมสิน</div>
                     <div className="text-sm text-muted-foreground">สมาคมศิษย์เก่ามหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ</div>
                   </div>
