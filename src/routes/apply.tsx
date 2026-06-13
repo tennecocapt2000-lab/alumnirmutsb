@@ -278,12 +278,7 @@ function ApplyPage() {
                     <div><span className="text-muted-foreground">เลขที่บัญชี: </span><span className="font-medium break-all font-mono">{payment.account_number}</span></div>
                   </div>
                   {payment.show_qr_code && payment.qr_code_url && (
-                    <div className="mt-4 flex flex-col items-center gap-2">
-                      <img src={payment.qr_code_url} alt="QR Code" loading="lazy" className="h-48 w-48 max-w-full rounded-md border bg-white object-contain p-2" />
-                      <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <QrCode className="h-3 w-3" /> สแกนเพื่อชำระเงิน
-                      </div>
-                    </div>
+                    <QrImage url={payment.qr_code_url} />
                   )}
                   {payment.payment_instruction && (
                     <p className="mt-4 rounded-md bg-background/60 p-3 text-sm text-muted-foreground">
