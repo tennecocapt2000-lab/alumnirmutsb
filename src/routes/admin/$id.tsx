@@ -46,13 +46,17 @@ function ApplicationDetail() {
   async function save() {
     if (!row) return;
     setSaving(true);
-    const update: Record<string, unknown> = {
+    const update: {
+      status: string;
+      member_no: string | null;
+      admin_note: string | null;
+      approved_at?: string;
+      approved_by?: string | null;
+    } = {
       status: row.status,
       member_no: row.member_no || null,
       admin_note: row.admin_note || null,
     };
-    // Audit: stamp approved_at/by the first time it becomes 'confirmed'.
-    // Never clear historic approval data when the admin toggles status away.
     if (row.status === "confirmed" && !row.approved_at) {
       update.approved_at = new Date().toISOString();
       update.approved_by = (await supabase.auth.getUser()).data.user?.id ?? null;
