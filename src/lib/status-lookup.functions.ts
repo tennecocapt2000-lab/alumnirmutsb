@@ -12,14 +12,13 @@ export type StatusLookupRow = {
   phone: string;
   status: string;
   member_no: string | null;
-  admin_note: string | null;
   created_at: string;
   payment_date: string | null;
 };
 
 // Public lookup: returns minimal fields and only matches by exact phone or exact member_no.
-// This prevents enumeration of the applications table while still letting applicants
-// check the status of their own submission.
+// admin_note is intentionally excluded — it may contain internal notes that should
+// not be exposed via a public phone-based lookup.
 export const lookupApplicationStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => schema.parse(input))
   .handler(async ({ data }): Promise<StatusLookupRow[]> => {
@@ -28,7 +27,7 @@ export const lookupApplicationStatus = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("applications")
-      .select("id,prefix,full_name,phone,status,member_no,admin_note,created_at,payment_date")
+      .select("id,prefix,full_name,phone,status,member_no,created_at,payment_date")
       .or(`phone.eq.${term},member_no.eq.${term}`)
       .order("created_at", { ascending: false })
       .limit(5);

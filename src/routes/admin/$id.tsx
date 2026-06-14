@@ -46,17 +46,29 @@ function ApplicationDetail() {
   async function save() {
     if (!row) return;
     setSaving(true);
-    const update = {
+    const update: {
+      status: string;
+      member_no: string | null;
+      admin_note: string | null;
+      approved_at?: string;
+      approved_by?: string | null;
+    } = {
       status: row.status,
       member_no: row.member_no || null,
       admin_note: row.admin_note || null,
-      approved_at: row.status === "confirmed" ? new Date().toISOString() : null,
-      approved_by: row.status === "confirmed" ? (await supabase.auth.getUser()).data.user?.id ?? null : null,
     };
+    if (row.status === "confirmed" && !row.approved_at) {
+      update.approved_at = new Date().toISOString();
+      update.approved_by = (await supabase.auth.getUser()).data.user?.id ?? null;
+    }
     const { error } = await supabase.from("applications").update(update).eq("id", id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("บันทึกเรียบร้อย");
+    // refresh local row so newly-stamped approved_at sticks in UI
+    if (update.approved_at) {
+      setRow({ ...row, approved_at: update.approved_at, approved_by: update.approved_by });
+    }
   }
 
   async function remove() {

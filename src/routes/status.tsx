@@ -104,12 +104,7 @@ function StatusPage() {
                   {statusLabel(r.status)}
                 </span>
               </div>
-              {r.admin_note && (
-                <div className="mt-3 rounded-md border bg-accent/30 p-3 text-sm">
-                  <div className="text-xs font-medium text-muted-foreground">หมายเหตุจากแอดมิน</div>
-                  <div className="mt-1">{r.admin_note}</div>
-                </div>
-              )}
+              {/* admin_note ถูกตัดออกจาก public lookup เพื่อกันการรั่วของโน้ตภายใน */}
               <div className="mt-3 text-xs text-muted-foreground">
                 สมัครเมื่อ {new Date(r.created_at).toLocaleString("th-TH")}
               </div>
