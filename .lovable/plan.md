@@ -1,25 +1,38 @@
-# แก้บั๊ก: QR Code ไม่แสดงบน Android ในหน้า "สมัครสมาชิก"
+# แก้บั๊ก: ส่งใบสมัครไม่สำเร็จ
 
-## อาการ
-- หน้า `/apply` ขั้นตอนที่ 4 (ชำระเงิน) บน iOS แสดง QR ปกติ
-- บน Android (Chrome) QR ไม่ขึ้น ทั้งที่ตั้งค่า "แสดง QR Code" ไว้แล้ว และไฟล์ภาพเข้าถึงได้ปกติ (ตรวจสอบแล้ว: HTTP 200, image/jpeg, 77KB)
+## สาเหตุที่พบ
 
-## สาเหตุที่น่าจะเป็น
-ใน `src/routes/apply.tsx` แท็ก `<img>` ของ QR ใช้ `loading="lazy"` และอยู่ในเนื้อหา step 3 ที่เพิ่งถูก render เมื่อผู้ใช้กดมาถึง — Android Chrome หลายเวอร์ชันมีบั๊กที่ lazy image ใน subtree ที่เพิ่งถูก mount ไม่ trigger การโหลด (iOS Safari ไม่มีปัญหานี้) นอกจากนี้ยังไม่มี `onError` / fallback ทำให้ถ้าโหลดพลาดก็เงียบไปเฉยๆ
+โค้ดในขั้นตอนส่งใบสมัคร (`src/routes/apply.tsx` บรรทัด 148):
 
-## สิ่งที่จะทำ (เฉพาะ frontend)
+```ts
+const { data, error } = await supabase
+  .from("applications")
+  .insert(payload)
+  .select("id")        // ← ตรงนี้คือต้นเหตุ
+  .single();
+```
 
-แก้ไขไฟล์เดียว: `src/routes/apply.tsx` ส่วนกล่อง QR
+ตาราง `public.applications` มี policy เฉพาะ `INSERT` สำหรับ anon และ `UPDATE/DELETE` สำหรับ admin **แต่ไม่มี SELECT policy เลย** ดังนั้นเมื่อใช้ `.select("id")` หลัง insert (PostgREST จะออก `RETURNING id` ซึ่งต้องผ่าน RLS SELECT) → คืนผลว่าง → `.single()` โยน error `PGRST116 "JSON object requested, multiple (or no) rows returned"`
 
-1. เปลี่ยน `loading="lazy"` → `loading="eager"` และเพิ่ม `decoding="async"`
-2. เพิ่ม `onError` handler — ถ้าโหลดภาพไม่สำเร็จ แสดงข้อความ + ปุ่มเปิดลิงก์รูปในแท็บใหม่ + ลิงก์ดาวน์โหลด เพื่อให้ผู้ใช้ Android ที่ยังเจอปัญหายังชำระเงินได้
-3. เพิ่ม `referrerPolicy="no-referrer"` (กัน edge case บางเครือข่ายบล็อก)
-4. แสดง state "กำลังโหลด QR…" ระหว่างรอภาพ
+ผล: ผู้สมัครอัปโหลดสลิป + insert แถวสำเร็จจริง แต่ฝั่งหน้าเว็บโชว์ toast แดง "ส่งใบสมัครไม่สำเร็จ กรุณาลองใหม่" และผู้ใช้กดส่งซ้ำ → ได้แถวซ้ำในฐานข้อมูล
+
+(ยืนยันจาก `\d applications` และ `pg_policy` — มีเพียง policy ของ admin กับ insert-only ของ anon ไม่มี select policy ใดๆ)
+
+## วิธีแก้ (frontend อย่างเดียว ไม่แตะฐานข้อมูล/policy)
+
+แก้ไฟล์เดียว: `src/routes/apply.tsx` ในฟังก์ชัน `submit()`
+
+1. ลบ `.select("id").single()` ออก เหลือแค่ `.insert(payload)` แล้วเช็ค `error`
+2. หลังสำเร็จ ให้ navigate ไป `/status?q=<phone>` (ไม่ต้องส่ง id) — หน้า status อยู่แล้วค้นหาตามเบอร์ผ่าน `lookupApplicationStatus` server function ก็แสดงใบสมัครล่าสุดของเบอร์นั้นได้ปกติ
+3. Normalize นามสกุลไฟล์สลิปเป็นตัวพิมพ์เล็ก (`.toLowerCase()`) — กันเคส iOS ส่งไฟล์ `.JPG/.HEIC` แล้วชน whitelist ของ storage policy (jpg/jpeg/png/webp/pdf) แม้ policy เช็ค `lower()` แล้ว แต่ตั้ง path ให้สะอาดเป็น good practice และตัด HEIC ที่จะ fail ออกตั้งแต่ฝั่ง client พร้อมข้อความที่เข้าใจง่าย
+4. ปรับข้อความ toast error ให้แสดง `error.message` ที่จริงเวลา debug ในอนาคต (เก็บข้อความภาษาไทยไว้ + console.error ของเดิม)
 
 ## สิ่งที่จะไม่ทำ
-- ไม่แก้ฐานข้อมูล / ไม่แก้หน้า admin / ไม่แก้ payment-settings
-- ไม่เปลี่ยนดีไซน์/สีของกล่องชำระเงิน
-- ไม่แตะหน้าอื่นที่ใช้ภาพ QR (ถ้ามี)
+
+- ไม่เพิ่ม SELECT policy บน `applications` ให้ anon (จะเปิดช่องให้ใครก็ได้อ่านใบสมัครคนอื่น)
+- ไม่แตะหน้า admin / payment_settings / status
+- ไม่เปลี่ยน UI/ดีไซน์ของ stepper
 
 ## วิธียืนยันว่าหาย
-หลังแก้ ให้ผู้ใช้รีเฟรชหน้า `/apply` บน Android Chrome → กด "ถัดไป" จนถึงขั้นชำระเงิน → QR ต้องขึ้น (ถ้าโหลดพลาดจริง ก็จะเห็นปุ่มเปิดลิงก์รูปแทน ไม่ใช่ช่องว่าง)
+
+กรอกฟอร์ม `/apply` ครบ 4 ขั้น → แนบสลิป → กดส่งใบสมัคร → toast เขียว "ส่งใบสมัครเรียบร้อยแล้ว" และเด้งไป `/status?q=<เบอร์>` พบใบสมัครที่เพิ่งสร้าง
