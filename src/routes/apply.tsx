@@ -422,9 +422,18 @@ function ApplyPage() {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+    <div className="flex flex-col gap-1 border-b border-dashed py-1.5 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       <dt className="shrink-0 text-xs text-muted-foreground sm:text-sm">{k}</dt>
-      <dd className="break-all text-sm font-medium sm:text-right">{v}</dd>
+      <dd className="break-words text-sm font-medium sm:text-right">{v}</dd>
+    </div>
+  );
+}
+
+function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <h3 className="mb-2 text-sm font-semibold text-primary">{title}</h3>
+      <dl className="grid gap-1">{children}</dl>
     </div>
   );
 }
