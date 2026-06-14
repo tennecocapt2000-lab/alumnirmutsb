@@ -126,10 +126,15 @@ function ApplyPage() {
       setStep(3);
       return;
     }
+    const rawExt = (slip.name.split(".").pop() || "jpg").toLowerCase();
+    const allowed = ["jpg", "jpeg", "png", "webp", "pdf"];
+    if (!allowed.includes(rawExt)) {
+      toast.error("ไฟล์สลิปต้องเป็น JPG, PNG, WEBP หรือ PDF เท่านั้น");
+      return;
+    }
     setSubmitting(true);
     try {
-      const ext = slip.name.split(".").pop() || "jpg";
-      const path = `${crypto.randomUUID()}.${ext}`;
+      const path = `${crypto.randomUUID()}.${rawExt}`;
       const { error: upErr } = await supabase.storage.from("payment-slips").upload(path, slip, { upsert: false });
       if (upErr) throw upErr;
 
@@ -145,13 +150,14 @@ function ApplyPage() {
         payment_qr_code_url: payment?.qr_code_url ?? null,
         status: "pending",
       };
-      const { data, error } = await supabase.from("applications").insert(payload).select("id").single();
+      const { error } = await supabase.from("applications").insert(payload);
       if (error) throw error;
       toast.success("ส่งใบสมัครเรียบร้อยแล้ว");
-      navigate({ to: "/status", search: { q: form.phone, id: data.id } as never });
+      navigate({ to: "/status", search: { q: form.phone } as never });
     } catch (e) {
-      console.error(e);
-      toast.error("ส่งใบสมัครไม่สำเร็จ กรุณาลองใหม่");
+      console.error("[apply] submit failed", e);
+      const msg = e instanceof Error ? e.message : "";
+      toast.error(msg ? `ส่งใบสมัครไม่สำเร็จ: ${msg}` : "ส่งใบสมัครไม่สำเร็จ กรุณาลองใหม่");
     } finally {
       setSubmitting(false);
     }
