@@ -334,20 +334,51 @@ function ApplyPage() {
           )}
 
           {step === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h2 className="text-lg font-semibold">ตรวจสอบข้อมูลก่อนส่ง</h2>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+
+              <ReviewSection title="ข้อมูลส่วนตัว">
                 <Row k="ชื่อ-นามสกุล" v={`${form.prefix} ${form.full_name}`} />
                 <Row k="โทรศัพท์" v={form.phone} />
                 <Row k="วันเกิด" v={form.birth_date || "-"} />
-                <Row k="จังหวัด (ปัจจุบัน)" v={form.current_province || "-"} />
+              </ReviewSection>
+
+              <ReviewSection title="ที่อยู่ปัจจุบัน">
+                <Row k="บ้านเลขที่ / หมู่ / ซอย / ถนน" v={[form.current_house_no, form.current_moo && `หมู่ ${form.current_moo}`, form.current_soi && `ซ.${form.current_soi}`, form.current_road && `ถ.${form.current_road}`].filter(Boolean).join(" ") || "-"} />
+                <Row k="ตำบล/อำเภอ/จังหวัด" v={[form.current_subdistrict, form.current_district, form.current_province].filter(Boolean).join(" / ") || "-"} />
+                <Row k="รหัสไปรษณีย์" v={form.current_postal_code || "-"} />
+              </ReviewSection>
+
+              {(form.work_house_no || form.work_province || form.work_phone) && (
+                <ReviewSection title="ที่ทำงาน">
+                  <Row k="ที่อยู่" v={[form.work_house_no, form.work_moo && `หมู่ ${form.work_moo}`, form.work_soi && `ซ.${form.work_soi}`, form.work_road && `ถ.${form.work_road}`].filter(Boolean).join(" ") || "-"} />
+                  <Row k="ตำบล/อำเภอ/จังหวัด" v={[form.work_subdistrict, form.work_district, form.work_province].filter(Boolean).join(" / ") || "-"} />
+                  <Row k="รหัสไปรษณีย์" v={form.work_postal_code || "-"} />
+                  <Row k="โทรที่ทำงาน" v={form.work_phone || "-"} />
+                </ReviewSection>
+              )}
+
+              <ReviewSection title="การศึกษา">
                 <Row k="ระดับการศึกษา" v={form.education_level} />
-                <Row k="สาขา" v={form.major || "-"} />
+                <Row k="เลขประจำตัวนักศึกษา" v={form.student_id || "-"} />
                 <Row k="ปีที่เข้าเรียน" v={form.enrollment_year || "-"} />
-                <Row k="รอบ" v={form.study_period} />
+                <Row k="สาขาวิชา" v={form.major || "-"} />
+                <Row k="รอบ/ภาคการศึกษา" v={form.study_period} />
+                <Row k="เพื่อนร่วมรุ่น 1" v={form.friend_1 || "-"} />
+                <Row k="เพื่อนร่วมรุ่น 2" v={form.friend_2 || "-"} />
+              </ReviewSection>
+
+              <ReviewSection title="การชำระเงิน">
+                <Row k="จำนวนเงิน" v={`${(payment?.application_fee ?? 200).toLocaleString("th-TH")} บาท`} />
+                <Row k="ธนาคาร / บัญชี" v={payment ? `${payment.bank_name} — ${payment.account_number}` : "-"} />
                 <Row k="วันที่โอนเงิน" v={form.payment_date || "-"} />
                 <Row k="สลิป" v={slip?.name || "-"} />
-              </dl>
+                {form.note && <Row k="หมายเหตุ" v={form.note} />}
+              </ReviewSection>
+
+              <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนกด "ส่งใบสมัคร" หากต้องการแก้ไข กดปุ่ม "ย้อนกลับ"
+              </p>
             </div>
           )}
 
